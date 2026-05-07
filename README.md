@@ -19,7 +19,7 @@ Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu 
 - `/tahminler` tahmin giriş ekranı ve kapanış sonrası herkesin tahminleri
 - `/sonuclar` maç sonuçları ve kullanıcının doğru/yanlış tahminleri
 - `/puan-tablosu` haftalık ve sezon puan tablosu
-- `/profil` profil ve çıkış ekranı
+- `/profil` profil, görünen ad düzenleme ve çıkış ekranı
 
 ## Kurulum
 
