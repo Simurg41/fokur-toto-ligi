@@ -42,10 +42,13 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-3. Supabase SQL Editor içinde `supabase/schema.sql` dosyasındaki SQL'i çalıştır.
-4. Supabase Auth ayarlarında Email provider'ın açık olduğundan emin ol.
+3. Supabase SQL Editor içinde önce `supabase/schema.sql` dosyasındaki SQL'i çalıştır.
+4. Demo sezon, açık hafta ve 15 maç oluşturmak için ardından `supabase/seed-demo-week.sql` dosyasındaki SQL'i çalıştır.
+5. Supabase Auth ayarlarında Email provider'ın açık olduğundan emin ol.
 
 `.env.local` git'e eklenmez. GitHub Actions içinde gerçek Supabase değerleri zorunlu değildir; uygulama build sırasında güvenli placeholder değerlerle derlenebilir.
+
+`/tahminler` ekranı aktif haftayı, maçları ve kullanıcının mevcut tahminlerini Supabase'den okur. "Tahminleri Kaydet" butonu seçimleri `predictions` tablosuna upsert ile kaydeder.
 
 ## Kontroller
 
@@ -58,5 +61,5 @@ npm run build
 
 - Supabase Auth temeli ve RLS şeması eklendi.
 - Harici API henüz eklenmedi.
-- Tahmin seçimleri şimdilik yalnızca local React state ile tutulur.
+- Tahmin seçimleri Supabase'e kaydedilir; ekranda seçim sırasında local React state kullanılır.
 - Spor Toto veri importu ve puan hesaplama henüz uygulanmadı.
