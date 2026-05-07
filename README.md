@@ -82,8 +82,15 @@ Kendini admin yapmak için `supabase/make-user-admin.example.sql` dosyasındaki 
 Admin kullanıcılar alt menüde `/admin` bağlantısını görür. Bu sayfa aktif sezonun son haftası için manuel yönetim sağlar:
 
 - Haftayı kapatır veya tekrar açar.
+- Yeni hafta oluşturur.
+- Yeni hafta için 15 maçlık listeyi manuel girer.
+- Aktif son haftanın ev sahibi, deplasman ve maç zamanı bilgilerini düzenler.
 - 15 maç için resmi sonucu `Boş`, `1`, `X`, `2` veya `void` olarak kaydeder.
 - `recalculate_scores_for_week` RPC fonksiyonu ile puanları hesaplar.
+
+Uygulama aktif sezon içindeki en yüksek `week_number` değerine sahip haftayı güncel hafta kabul eder. Yeni hafta oluştururken `week_number` önceki haftalardan büyük olursa `/tahminler`, `/sonuclar`, `/puan-tablosu` ve `/admin` bu haftayı kullanır.
+
+Yeni hafta oluşturmak için `/admin` içindeki "Yeni Hafta Oluştur" formunda hafta adı, hafta numarası, tahmin açılış/kapanış zamanı ve 15 maçın ev sahibi/deplasman bilgileri girilir. Maç zamanı isteğe bağlıdır. Oluşturduktan sonra aynı sayfadaki "Aktif Hafta Yönetimi" bölümünden maç listesi manuel olarak güncellenebilir.
 
 Bu panel otomatik Spor Toto importu gelmeden önce manuel yedek yönetim aracı olarak tasarlanmıştır. Service role key kullanılmaz.
 
