@@ -9,6 +9,7 @@ const navItems = [
   { href: "/sonuclar", label: "Sonuçlar", icon: "S" },
   { href: "/puan-tablosu", label: "Puan", icon: "#" },
   { href: "/profil", label: "Profil", icon: "P" },
+  { href: "/giris", label: "Giriş", icon: "G" },
 ];
 
 export function BottomNavigation() {
@@ -16,7 +17,7 @@ export function BottomNavigation() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+      <div className="mx-auto grid max-w-md grid-cols-6 gap-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
 
