@@ -1,0 +1,11 @@
+-- Example: make one existing Supabase Auth user an admin.
+-- Replace YOUR_EMAIL@example.com, then run this in Supabase SQL Editor.
+-- Run supabase/add-admin-role-and-admin-tools.sql before this file.
+
+-- update public.profiles
+-- set role = 'admin'
+-- where id = (
+--   select id
+--   from auth.users
+--   where email = 'ahmetkgaming@gmail.com'
+-- );

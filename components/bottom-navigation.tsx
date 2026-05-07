@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/browser";
 
 const navItems = [
   { href: "/", label: "Ana Sayfa", icon: "A" },
@@ -14,11 +16,50 @@ const navItems = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const visibleNavItems = useMemo(
+    () => (isAdmin ? [...navItems, { href: "/admin", label: "Admin", icon: "Y" }] : navItems),
+    [isAdmin],
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadRole() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || !isMounted) {
+        return;
+      }
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (isMounted) {
+        setIsAdmin(data?.role === "admin");
+      }
+    }
+
+    loadRole();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-6 gap-1">
-        {navItems.map((item) => {
+      <div
+        className="mx-auto grid max-w-md gap-1"
+        style={{ gridTemplateColumns: `repeat(${visibleNavItems.length}, minmax(0, 1fr))` }}
+      >
+        {visibleNavItems.map((item) => {
           const isActive = pathname === item.href;
 
           return (
