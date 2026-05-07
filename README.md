@@ -15,7 +15,7 @@ Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu 
 ## Ekranlar
 
 - `/` ana sayfa
-- `/giris` e-posta ve şifre ile giriş/kayıt ekranı
+- `/giris` e-posta ve şifre ile giriş/kayıt ekranı; kullanıcılar buradan şifre sıfırlama bağlantısı isteyebilir
 - `/tahminler` tahmin giriş ekranı ve kapanış sonrası herkesin tahminleri
 - `/sonuclar` maç sonuçları ve kullanıcının doğru/yanlış tahminleri
 - `/puan-tablosu` haftalık ve sezon puan tablosu
@@ -46,6 +46,12 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 4. Demo sezon, açık hafta ve 15 maç oluşturmak için ardından `supabase/seed-demo-week.sql` dosyasındaki SQL'i çalıştır.
 5. Admin rolü, admin RLS politikaları ve puan hesaplama RPC fonksiyonu için `supabase/add-admin-role-and-admin-tools.sql` çalıştır.
 6. Supabase Auth ayarlarında Email provider'ın açık olduğundan emin ol.
+7. Şifre sıfırlama için Supabase redirect URL listesinde şu adreslerin bulunduğundan emin ol:
+
+```text
+http://localhost:3000/**
+https://spor-toto-tahmin.vercel.app/**
+```
 
 `.env.local` git'e eklenmez. GitHub Actions içinde gerçek Supabase değerleri zorunlu değildir; uygulama build sırasında güvenli placeholder değerlerle derlenebilir.
 
