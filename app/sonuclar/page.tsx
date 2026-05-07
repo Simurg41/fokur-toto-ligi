@@ -1,17 +1,157 @@
-export default function ResultsPage() {
+import { createClient } from "@/lib/supabase/server";
+
+type Pick = "1" | "X" | "2";
+type Result = Pick | "void" | null;
+
+type Week = {
+  id: string;
+  name: string | null;
+  week_number: number;
+};
+
+type Match = {
+  id: string;
+  position: number;
+  home_team: string;
+  away_team: string;
+  official_result: Result;
+};
+
+type Prediction = {
+  match_id: string;
+  pick: Pick;
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function ResultsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: week } = await supabase
+    .from("weeks")
+    .select("id, name, week_number, seasons!inner(is_active)")
+    .eq("seasons.is_active", true)
+    .order("week_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const activeWeek = week as Week | null;
+
+  if (!activeWeek || !user) {
+    return (
+      <ResultsShell>
+        <EmptyState text="Sonuçlar henüz açıklanmadı." />
+      </ResultsShell>
+    );
+  }
+
+  const [{ data: matchData }, { data: predictionData }] = await Promise.all([
+    supabase
+      .from("matches")
+      .select("id, position, home_team, away_team, official_result")
+      .eq("week_id", activeWeek.id)
+      .order("position", { ascending: true }),
+    supabase
+      .from("predictions")
+      .select("match_id, pick")
+      .eq("week_id", activeWeek.id)
+      .eq("user_id", user.id),
+  ]);
+
+  const matches = (matchData || []) as Match[];
+  const predictions = ((predictionData || []) as Prediction[]).reduce<Record<string, Pick>>(
+    (current, prediction) => ({
+      ...current,
+      [prediction.match_id]: prediction.pick,
+    }),
+    {},
+  );
+  const hasResults = matches.some((match) => Boolean(match.official_result));
+  const correctCount = matches.filter(
+    (match) => match.official_result && match.official_result !== "void" && predictions[match.id] === match.official_result,
+  ).length;
+
+  return (
+    <ResultsShell>
+      {!hasResults ? (
+        <EmptyState text="Sonuçlar henüz açıklanmadı." />
+      ) : (
+        <>
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">
+              {activeWeek.name || `${activeWeek.week_number}. hafta`}
+            </p>
+            <p className="mt-2 text-2xl font-bold text-slate-950">
+              Doğru: {correctCount} / {matches.length}
+            </p>
+          </section>
+
+          <div className="space-y-3">
+            {matches.map((match) => (
+              <MatchResultCard
+                key={match.id}
+                match={match}
+                pick={predictions[match.id]}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </ResultsShell>
+  );
+}
+
+function ResultsShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-4">
       <header>
         <p className="text-sm font-semibold text-teal-700">Sonuçlar</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-950">Maç sonuçları</h1>
       </header>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-sm leading-6 text-slate-600">
-          Sonuçlar ekranı hazır. Harici API bağlantısı eklendiğinde haftanın maç sonuçları burada
-          listelenecek.
-        </p>
-      </section>
+      {children}
     </div>
+  );
+}
+
+function MatchResultCard({ match, pick }: { match: Match; pick?: Pick }) {
+  const isVoid = match.official_result === "void" || !match.official_result;
+  const isCorrect = !isVoid && pick === match.official_result;
+  const cardStyle = isVoid
+    ? "border-slate-200 bg-white"
+    : isCorrect
+      ? "border-teal-200 bg-teal-50"
+      : "border-red-200 bg-red-50";
+  const resultLabel = match.official_result === "void" ? "İptal" : match.official_result || "-";
+
+  return (
+    <article className={`rounded-lg border p-4 shadow-sm ${cardStyle}`}>
+      <p className="text-xs font-bold uppercase tracking-normal text-slate-500">
+        Maç {match.position}
+      </p>
+      <h2 className="mt-1 text-base font-bold text-slate-950">
+        {match.home_team} - {match.away_team}
+      </h2>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-md bg-white/70 px-3 py-2">
+          <p className="text-xs font-semibold text-slate-500">Senin tahminin</p>
+          <p className="mt-1 text-lg font-bold text-slate-950">{pick || "-"}</p>
+        </div>
+        <div className="rounded-md bg-white/70 px-3 py-2">
+          <p className="text-xs font-semibold text-slate-500">Sonuç</p>
+          <p className="mt-1 text-lg font-bold text-slate-950">{resultLabel}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-sm leading-6 text-slate-600">{text}</p>
+    </section>
   );
 }
