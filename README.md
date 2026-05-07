@@ -58,6 +58,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 6. `/sonuclar` ekranında maç sonuçlarını ve kendi doğru/yanlış tahminlerini kontrol et.
 7. `/puan-tablosu` ekranında haftalık ve sezon puan tablolarını kontrol et.
 
+Puanlar hesaplandıktan sonra `/sonuclar` ekranında "Tüm Sonuçları Gör" bölümü görünür. Bu bölüm haftanın skorlarını düşük puandan yüksek puana doğru animasyonlu şekilde açıklar ve en sonda haftanın kazananını gösterir.
+
 Sonuçları ve puanları temizleyip haftayı tekrar açmak için:
 
 ```sql
