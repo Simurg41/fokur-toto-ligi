@@ -80,6 +80,8 @@ export default function AdminPage() {
   const [importClosesAt, setImportClosesAt] = useState("");
   const [importPreview, setImportPreview] = useState<ParsedSporTotoMatch[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [officialGameRoundId, setOfficialGameRoundId] = useState("");
+  const [isFetchingOfficial, setIsFetchingOfficial] = useState(false);
 
   const predictionsAreOpen = useMemo(() => {
     if (!week) {
@@ -434,6 +436,47 @@ export default function AdminPage() {
     setImportErrors([]);
   }
 
+  async function previewOfficialList() {
+    if (!/^[1-9]\d*$/.test(officialGameRoundId)) {
+      setImportPreview([]);
+      setImportErrors(["gameRoundId pozitif bir sayı olmalı."]);
+      return;
+    }
+
+    setIsFetchingOfficial(true);
+    setImportErrors([]);
+
+    try {
+      const response = await fetch(
+        `/api/spor-toto/matches?gameRoundId=${encodeURIComponent(officialGameRoundId)}`,
+      );
+      const payload = (await response.json()) as {
+        ok: boolean;
+        weekNameSuggestion?: string | null;
+        matches?: ParsedSporTotoMatch[];
+        errors?: string[];
+      };
+
+      if (!response.ok || !payload.ok || !payload.matches) {
+        setImportPreview([]);
+        setImportErrors(payload.errors || ["Resmî liste önizlenemedi."]);
+        return;
+      }
+
+      setImportPreview(payload.matches);
+      setImportErrors([]);
+
+      if (!importWeekName.trim() && payload.weekNameSuggestion) {
+        setImportWeekName(payload.weekNameSuggestion);
+      }
+    } catch {
+      setImportPreview([]);
+      setImportErrors(["Resmî liste kontrol edilirken bağlantı hatası oluştu."]);
+    } finally {
+      setIsFetchingOfficial(false);
+    }
+  }
+
   async function createImportedWeek() {
     if (!season) {
       setMessage({ type: "error", text: "Aktif sezon bulunamadı." });
@@ -670,6 +713,10 @@ export default function AdminPage() {
         setImportClosesAt={setImportClosesAt}
         previewImportList={previewImportList}
         createImportedWeek={createImportedWeek}
+        officialGameRoundId={officialGameRoundId}
+        isFetchingOfficial={isFetchingOfficial}
+        setOfficialGameRoundId={setOfficialGameRoundId}
+        previewOfficialList={previewOfficialList}
       />
     </AdminShell>
   );
@@ -917,6 +964,10 @@ function ImportPreviewSection({
   setImportClosesAt,
   previewImportList,
   createImportedWeek,
+  officialGameRoundId,
+  isFetchingOfficial,
+  setOfficialGameRoundId,
+  previewOfficialList,
 }: {
   isWorking: boolean;
   importText: string;
@@ -933,6 +984,10 @@ function ImportPreviewSection({
   setImportClosesAt: (value: string) => void;
   previewImportList: () => void;
   createImportedWeek: () => void;
+  officialGameRoundId: string;
+  isFetchingOfficial: boolean;
+  setOfficialGameRoundId: (value: string) => void;
+  previewOfficialList: () => void;
 }) {
   return (
     <section className="space-y-4">
@@ -943,6 +998,32 @@ function ImportPreviewSection({
           Resmî Spor Toto listesini önce önizle, sonra onaylarsan yeni hafta olarak kaydet.
         </p>
       </div>
+
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div>
+          <p className="text-sm font-bold text-slate-900">Resmî API’den Liste Çek</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            gameRoundId girerek resmî listeden 15 maçı önizle. Kaydetme işlemi yine admin onayı
+            ister.
+          </p>
+        </div>
+        <TextInput
+          label="gameRoundId"
+          type="number"
+          value={officialGameRoundId}
+          onChange={setOfficialGameRoundId}
+          min="1"
+          placeholder="1512"
+        />
+        <button
+          type="button"
+          onClick={previewOfficialList}
+          disabled={isWorking || isFetchingOfficial}
+          className="h-11 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white disabled:opacity-60"
+        >
+          {isFetchingOfficial ? "Resmî liste kontrol ediliyor..." : "Resmî Listeden Önizle"}
+        </button>
+      </section>
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label className="block">
@@ -1037,8 +1118,8 @@ function ImportPreviewSection({
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-bold text-slate-800">Resmî siteden otomatik çekme</p>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Bu bölüm bir sonraki adımda resmî Spor Toto sayfası veya indirilebilir liste dosyası
-          incelendikten sonra aktif edilecek.
+          Otomatik zamanlanmış import ve sonuç çekme henüz aktif değil. Resmî API değişirse bu
+          önizleme akışı da güncellenmelidir.
         </p>
       </section>
     </section>
