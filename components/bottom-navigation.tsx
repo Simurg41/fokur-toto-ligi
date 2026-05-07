@@ -24,34 +24,52 @@ export function BottomNavigation() {
 
   useEffect(() => {
     let isMounted = true;
+    const supabase = createClient();
 
-    async function loadRole() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user || !isMounted) {
+    async function loadRoleForUser(userId: string | undefined) {
+      if (!userId) {
+        if (isMounted) {
+          setIsAdmin(false);
+        }
         return;
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", user.id)
+        .eq("id", userId)
         .maybeSingle();
 
       if (isMounted) {
-        setIsAdmin(data?.role === "admin");
+        setIsAdmin(!error && data?.role === "admin");
       }
     }
 
-    loadRole();
+    async function loadCurrentRole() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!isMounted) {
+        return;
+      }
+
+      await loadRoleForUser(session?.user.id);
+    }
+
+    loadCurrentRole();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void Promise.resolve().then(() => loadRoleForUser(session?.user.id));
+    });
 
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur">
