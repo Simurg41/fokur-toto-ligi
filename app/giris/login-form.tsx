@@ -13,6 +13,7 @@ export function LoginForm() {
   const [view, setView] = useState<View>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -118,15 +119,25 @@ export function LoginForm() {
       {view !== "reset" ? (
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Sifre</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            minLength={6}
-            autoComplete={view === "login" ? "current-password" : "new-password"}
-            className="mt-2 h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-base text-slate-950 outline-none focus:border-teal-600"
-          />
+          <div className="relative mt-2">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={6}
+              autoComplete={view === "login" ? "current-password" : "new-password"}
+              className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 pr-20 text-base text-slate-950 outline-none focus:border-teal-600"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+              className="absolute inset-y-1 right-1 rounded-md px-3 text-sm font-bold text-teal-700"
+            >
+              {showPassword ? "Gizle" : "Göster"}
+            </button>
+          </div>
         </label>
       ) : null}
 
