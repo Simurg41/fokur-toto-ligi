@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ResultsReveal, type RevealScore } from "@/components/results-reveal";
 
 type Pick = "1" | "X" | "2";
 type Result = Pick | "void" | null;
@@ -20,6 +21,17 @@ type Match = {
 type Prediction = {
   match_id: string;
   pick: Pick;
+};
+
+type WeeklyScore = {
+  user_id: string;
+  correct_count: number;
+  points: number;
+};
+
+type Profile = {
+  id: string;
+  display_name: string | null;
 };
 
 export const dynamic = "force-dynamic";
@@ -48,7 +60,7 @@ export default async function ResultsPage() {
     );
   }
 
-  const [{ data: matchData }, { data: predictionData }] = await Promise.all([
+  const [{ data: matchData }, { data: predictionData }, { data: weeklyScoreData }] = await Promise.all([
     supabase
       .from("matches")
       .select("id, position, home_team, away_team, official_result")
@@ -59,9 +71,41 @@ export default async function ResultsPage() {
       .select("match_id, pick")
       .eq("week_id", activeWeek.id)
       .eq("user_id", user.id),
+    supabase
+      .from("weekly_scores")
+      .select("user_id, correct_count, points")
+      .eq("week_id", activeWeek.id),
   ]);
 
   const matches = (matchData || []) as Match[];
+  const weeklyScores = (weeklyScoreData || []) as WeeklyScore[];
+  const userIds = weeklyScores.map((score) => score.user_id);
+  let profiles: Profile[] = [];
+
+  if (userIds.length > 0) {
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds);
+
+    profiles = (profileData || []) as Profile[];
+  }
+
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const revealScores = weeklyScores
+    .map<RevealScore>((score) => ({
+      userId: score.user_id,
+      name: profileById.get(score.user_id)?.display_name?.trim() || "Kullanıcı",
+      correctCount: score.correct_count,
+      points: score.points,
+    }))
+    .sort((first, second) => {
+      if (first.points !== second.points) {
+        return first.points - second.points;
+      }
+
+      return first.name.localeCompare(second.name, "tr");
+    });
   const predictions = ((predictionData || []) as Prediction[]).reduce<Record<string, Pick>>(
     (current, prediction) => ({
       ...current,
@@ -98,6 +142,8 @@ export default async function ResultsPage() {
               />
             ))}
           </div>
+
+          {revealScores.length > 0 ? <ResultsReveal scores={revealScores} /> : null}
         </>
       )}
     </ResultsShell>
