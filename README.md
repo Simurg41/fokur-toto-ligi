@@ -19,6 +19,7 @@ Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu 
 - `/tahminler` tahmin giriş ekranı ve kapanış sonrası herkesin tahminleri
 - `/sonuclar` maç sonuçları ve kullanıcının doğru/yanlış tahminleri
 - `/puan-tablosu` haftalık ve sezon puan tablosu
+- `/haftalar` eski haftalar, kullanıcının tahminleri, sonuçlar ve haftalık sıralama
 - `/profil` profil, görünen ad düzenleme ve çıkış ekranı
 
 ## Kurulum
@@ -64,6 +65,7 @@ https://spor-toto-tahmin.vercel.app/**
 5. Puanları hesaplamak için `supabase/recalculate-demo-scores.sql` çalıştır.
 6. `/sonuclar` ekranında maç sonuçlarını ve kendi doğru/yanlış tahminlerini kontrol et.
 7. `/puan-tablosu` ekranında haftalık ve sezon puan tablolarını kontrol et.
+8. `/haftalar` ekranından eski haftaları, kendi tahminlerini, sonuçları ve haftalık puan tablosunu görüntüle.
 
 Puanlar hesaplandıktan sonra `/sonuclar` ekranında "Tüm Sonuçları Gör" bölümü görünür. Bu bölüm haftanın skorlarını düşük puandan yüksek puana doğru animasyonlu şekilde açıklar ve en sonda haftanın kazananını gösterir.
 

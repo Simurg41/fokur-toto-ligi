@@ -28,6 +28,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      <Link
+        href="/haftalar"
+        className="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-300"
+      >
+        <p className="text-sm font-semibold text-teal-700">Geçmiş Haftalar</p>
+        <h2 className="mt-1 text-lg font-bold text-slate-950">Eski kuponları ve puanları gör</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Tamamlanan haftalarda tahminlerini, maç sonuçlarını ve haftalık sıralamayı kontrol et.
+        </p>
+      </Link>
+
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-lg font-bold text-slate-950">Baslangic surumu</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
