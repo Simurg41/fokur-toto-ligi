@@ -126,6 +126,26 @@ Bu işlem veritabanına otomatik yazmaz. Admin önce 15 maçlık listeyi önizle
 
 Resmî API uç noktası ileride değişebilir; böyle bir durumda `app/api/spor-toto/matches` ve parser güncellenmelidir. Resmî sonuç importu, cron veya otomatik mevcut hafta tespiti henüz yoktur.
 
+### Resmî Sonuç Önizleme
+
+Admin panelindeki "Resmî Sonuçları İçe Aktar" alanı aynı `gameRoundId` ile resmî sonuçları önizler. Maç listesi ve maç sonuçları aynı endpoint üzerinden okunur:
+
+```text
+https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId={gameRoundId}
+```
+
+Örnek:
+
+```text
+https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId=1512
+```
+
+`gameRoundId` bulmak için DevTools Network sekmesinde `GetGameMatches?gameRoundId=1512` benzeri isteği arayabilirsin. `/admin` içinde "Resmî Sonuçları Önizle" butonu sonuçları getirir, aktif haftadaki maçlarla pozisyona göre eşleştirir ve uyarıları gösterir.
+
+`GetGameResultByGameRoundId?id=1512` endpointi 1/X/2 maç sonucu değil, ödül/ikramiye bilgisi döndürür. Bu yüzden sonuç importunda kullanılmaz. Maçlar oynandıktan sonra `GetGameMatches` yanıtında `match.fullTimeWin` ve `match.score.homeRegular / awayRegular` alanları dolduğunda sonuçlar okunabilir.
+
+Sonuçlar otomatik uygulanmaz. Admin her sonucu `Boş`, `1`, `X`, `2` veya `void` olarak düzenleyebilir ve yalnızca "Resmî Sonuçları Uygula" butonuyla aktif haftaya yazar. Puanlar otomatik hesaplanmaz; sonuçları uyguladıktan sonra "Puanları Hesapla" butonuna basmak gerekir.
+
 Bu panel otomatik Spor Toto importu gelmeden önce manuel yedek yönetim aracı olarak tasarlanmıştır. Service role key kullanılmaz.
 
 ## Kontroller
