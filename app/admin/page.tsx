@@ -7,6 +7,7 @@ import {
   parsePastedSporTotoList,
   type ParsedSporTotoMatch,
 } from "@/lib/spor-toto/parse-pasted-list";
+import type { ParsedOfficialResultRow } from "@/lib/spor-toto/parse-official-results";
 
 type Result = "" | "1" | "X" | "2" | "void";
 
@@ -82,6 +83,12 @@ export default function AdminPage() {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [officialGameRoundId, setOfficialGameRoundId] = useState("");
   const [isFetchingOfficial, setIsFetchingOfficial] = useState(false);
+  const [officialResultGameRoundId, setOfficialResultGameRoundId] = useState("");
+  const [isFetchingOfficialResults, setIsFetchingOfficialResults] = useState(false);
+  const [officialResultPreview, setOfficialResultPreview] = useState<ParsedOfficialResultRow[]>([]);
+  const [officialResultDrafts, setOfficialResultDrafts] = useState<Record<number, Result>>({});
+  const [officialResultErrors, setOfficialResultErrors] = useState<string[]>([]);
+  const [officialResultWarnings, setOfficialResultWarnings] = useState<string[]>([]);
 
   const predictionsAreOpen = useMemo(() => {
     if (!week) {
@@ -477,6 +484,101 @@ export default function AdminPage() {
     }
   }
 
+  async function previewOfficialResults() {
+    if (!/^[1-9]\d*$/.test(officialResultGameRoundId)) {
+      setOfficialResultPreview([]);
+      setOfficialResultErrors(["gameRoundId pozitif bir sayı olmalı."]);
+      setOfficialResultWarnings([]);
+      return;
+    }
+
+    setIsFetchingOfficialResults(true);
+    setOfficialResultErrors([]);
+    setOfficialResultWarnings([]);
+
+    try {
+      const response = await fetch(
+        `/api/spor-toto/results?gameRoundId=${encodeURIComponent(officialResultGameRoundId)}`,
+      );
+      const payload = (await response.json()) as {
+        ok: boolean;
+        results?: ParsedOfficialResultRow[];
+        warnings?: string[];
+        errors?: string[];
+      };
+
+      if (!response.ok || !payload.ok || !payload.results) {
+        setOfficialResultPreview([]);
+        setOfficialResultErrors(payload.errors || ["Resmî sonuçlar önizlenemedi."]);
+        return;
+      }
+
+      const teamWarnings = buildTeamMismatchWarnings(payload.results, matches);
+      setOfficialResultPreview(payload.results);
+      setOfficialResultDrafts(
+        payload.results.reduce<Record<number, Result>>((current, row) => {
+          current[row.position] = row.official_result || "";
+          return current;
+        }, {}),
+      );
+      setOfficialResultWarnings([...(payload.warnings || []), ...teamWarnings]);
+      setOfficialResultErrors([]);
+    } catch {
+      setOfficialResultPreview([]);
+      setOfficialResultErrors(["Resmî sonuçlar kontrol edilirken bağlantı hatası oluştu."]);
+    } finally {
+      setIsFetchingOfficialResults(false);
+    }
+  }
+
+  async function applyOfficialResults() {
+    if (officialResultPreview.length === 0) {
+      setOfficialResultErrors(["Önce resmî sonuçları önizle."]);
+      return;
+    }
+
+    setIsWorking(true);
+    setMessage(null);
+
+    const supabase = createClient();
+    const responses = await Promise.all(
+      matches.map((match) =>
+        supabase
+          .from("matches")
+          .update({ official_result: officialResultDrafts[match.position] || null })
+          .eq("id", match.id),
+      ),
+    );
+    const error = responses.find((response) => response.error)?.error;
+
+    setIsWorking(false);
+
+    if (error) {
+      setMessage({ type: "error", text: error.message });
+      return;
+    }
+
+    setResults((current) => {
+      const nextResults = { ...current };
+
+      matches.forEach((match) => {
+        nextResults[match.id] = officialResultDrafts[match.position] || "";
+      });
+
+      return nextResults;
+    });
+    setMatches((current) =>
+      current.map((match) => ({
+        ...match,
+        official_result: officialResultDrafts[match.position] || null,
+      })),
+    );
+    setMessage({
+      type: "success",
+      text: "Resmî sonuçlar uygulandı. Puanları hesaplamak için Puanları Hesapla butonuna bas.",
+    });
+  }
+
   async function createImportedWeek() {
     if (!season) {
       setMessage({ type: "error", text: "Aktif sezon bulunamadı." });
@@ -680,6 +782,21 @@ export default function AdminPage() {
           saveMatchList={saveMatchList}
           saveResults={saveResults}
         />
+
+        <OfficialResultsImportSection
+          matches={matches}
+          isWorking={isWorking}
+          gameRoundId={officialResultGameRoundId}
+          isFetching={isFetchingOfficialResults}
+          preview={officialResultPreview}
+          drafts={officialResultDrafts}
+          errors={officialResultErrors}
+          warnings={officialResultWarnings}
+          setGameRoundId={setOfficialResultGameRoundId}
+          setDrafts={setOfficialResultDrafts}
+          previewOfficialResults={previewOfficialResults}
+          applyOfficialResults={applyOfficialResults}
+        />
       </section>
 
       <NewWeekForm
@@ -827,6 +944,144 @@ function MatchManagement({
       >
         Sonuçları Kaydet
       </button>
+    </section>
+  );
+}
+
+function OfficialResultsImportSection({
+  matches,
+  isWorking,
+  gameRoundId,
+  isFetching,
+  preview,
+  drafts,
+  errors,
+  warnings,
+  setGameRoundId,
+  setDrafts,
+  previewOfficialResults,
+  applyOfficialResults,
+}: {
+  matches: Match[];
+  isWorking: boolean;
+  gameRoundId: string;
+  isFetching: boolean;
+  preview: ParsedOfficialResultRow[];
+  drafts: Record<number, Result>;
+  errors: string[];
+  warnings: string[];
+  setGameRoundId: (value: string) => void;
+  setDrafts: React.Dispatch<React.SetStateAction<Record<number, Result>>>;
+  previewOfficialResults: () => void;
+  applyOfficialResults: () => void;
+}) {
+  const matchByPosition = new Map(matches.map((match) => [match.position, match]));
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold text-teal-700">Resmî Sonuçları İçe Aktar</p>
+        <h2 className="mt-1 text-lg font-bold text-slate-950">Önizle, düzenle, uygula</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Sonuçlar, maçlar oynandıktan sonra resmî maç listesi endpointindeki fullTimeWin ve skor
+          alanlarından okunur.
+        </p>
+      </div>
+
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <TextInput
+          label="gameRoundId"
+          type="number"
+          value={gameRoundId}
+          onChange={setGameRoundId}
+          min="1"
+          placeholder="1512"
+        />
+        <button
+          type="button"
+          onClick={previewOfficialResults}
+          disabled={isWorking || isFetching}
+          className="h-11 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white disabled:opacity-60"
+        >
+          {isFetching ? "Resmî sonuçlar kontrol ediliyor..." : "Resmî Sonuçları Önizle"}
+        </button>
+      </section>
+
+      {errors.length > 0 ? (
+        <section className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-bold text-red-800">Sonuç önizleme hataları</p>
+          <ul className="mt-2 space-y-1 text-sm text-red-700">
+            {errors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {warnings.length > 0 ? (
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-bold text-amber-800">Kontrol uyarıları</p>
+          <ul className="mt-2 space-y-1 text-sm text-amber-700">
+            {warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {preview.length > 0 ? (
+        <section className="space-y-3">
+          {preview.map((row) => {
+            const localMatch = matchByPosition.get(row.position);
+
+            return (
+              <article
+                key={row.position}
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <p className="text-xs font-bold uppercase tracking-normal text-slate-400">
+                  Maç {row.position}
+                </p>
+                <h3 className="mt-1 text-base font-bold text-slate-950">
+                  {row.home_team || localMatch?.home_team || "Ev sahibi"} -{" "}
+                  {row.away_team || localMatch?.away_team || "Deplasman"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Skor: {row.score || "-"} · Algılanan sonuç: {row.official_result || "Boş"}
+                </p>
+                <label className="mt-3 block">
+                  <span className="text-sm font-semibold text-slate-600">Uygulanacak sonuç</span>
+                  <select
+                    value={drafts[row.position] || ""}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [row.position]: event.target.value as Result,
+                      }))
+                    }
+                    className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none focus:border-teal-600"
+                  >
+                    {resultOptions.map((option) => (
+                      <option key={option.value || "empty"} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </article>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={applyOfficialResults}
+            disabled={isWorking}
+            className="h-12 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+          >
+            Resmî Sonuçları Uygula
+          </button>
+        </section>
+      ) : null}
     </section>
   );
 }
@@ -1200,4 +1455,32 @@ function toDateTimeLocalValue(value: string | null) {
   const date = new Date(value);
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function buildTeamMismatchWarnings(importedRows: ParsedOfficialResultRow[], localMatches: Match[]) {
+  const matchByPosition = new Map(localMatches.map((match) => [match.position, match]));
+  const warnings: string[] = [];
+
+  importedRows.forEach((row) => {
+    const localMatch = matchByPosition.get(row.position);
+
+    if (!localMatch || !row.home_team || !row.away_team) {
+      return;
+    }
+
+    const localLabel = normalizeTeamLabel(`${localMatch.home_team} ${localMatch.away_team}`);
+    const importedLabel = normalizeTeamLabel(`${row.home_team} ${row.away_team}`);
+
+    if (localLabel !== importedLabel) {
+      warnings.push(
+        `${row.position}. maç takım adları farklı görünüyor: API "${row.home_team} - ${row.away_team}", aktif hafta "${localMatch.home_team} - ${localMatch.away_team}".`,
+      );
+    }
+  });
+
+  return warnings;
+}
+
+function normalizeTeamLabel(value: string) {
+  return value.toLocaleLowerCase("tr-TR").replace(/\s+/g, " ").trim();
 }
