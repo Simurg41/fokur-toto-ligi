@@ -1,7 +1,7 @@
 {
-  "name": "Spor Toto Tahmin",
-  "short_name": "ST Tahmin",
-  "description": "Spor Toto kupon tahminlerini mobil odaklı takip et.",
+  "name": "Fokur Toto Ligi",
+  "short_name": "Fokur Toto",
+  "description": "Fokur Toto Ligi kupon tahminlerini mobil odaklı takip et.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

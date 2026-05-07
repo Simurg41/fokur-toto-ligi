@@ -5,7 +5,7 @@ export default function HomePage() {
     <div className="space-y-6">
       <section className="rounded-lg bg-teal-700 p-5 text-white shadow-sm">
         <p className="text-sm font-semibold text-teal-100">Haftanın kuponu</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal">Spor Toto Tahmin</h1>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal">Fokur Toto Ligi</h1>
         <p className="mt-3 text-sm leading-6 text-teal-50">
           15 maçlık kuponunu seç, sonuçları takip et ve puan tablosunda durumunu gör.
         </p>

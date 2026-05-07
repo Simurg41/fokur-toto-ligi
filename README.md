@@ -1,6 +1,6 @@
-# Spor Toto Tahmin
+# Fokur Toto Ligi
 
-Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu Spor Toto tahmin uygulaması.
+Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu Fokur Toto Ligi uygulaması.
 
 ## Teknolojiler
 
