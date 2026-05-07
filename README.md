@@ -50,6 +50,26 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 `/tahminler` ekranı aktif haftayı, maçları ve kullanıcının mevcut tahminlerini Supabase'den okur. "Tahminleri Kaydet" butonu seçimleri `predictions` tablosuna upsert ile kaydeder.
 
+## Demo Hafta Testi
+
+Hafta açıkken `/tahminler` ekranında kullanıcı yalnızca kendi tahminlerini görür, 1/X/2 seçimlerini değiştirebilir ve "Tahminleri Kaydet" ile Supabase'e kaydeder.
+
+Haftayı kapatmak ve herkesin tahminlerini görmek için Supabase SQL Editor içinde şunu çalıştır:
+
+```sql
+-- supabase/close-demo-week.sql
+```
+
+Kapanıştan sonra `/tahminler` ekranında seçim butonları pasif olur, kayıt butonu gizlenir, "Tahmin süresi doldu." mesajı ve "Herkesin Tahminleri" bölümü görünür.
+
+Haftayı yeniden açmak için Supabase SQL Editor içinde şunu çalıştır:
+
+```sql
+-- supabase/reopen-demo-week.sql
+```
+
+Yeniden açıldıktan sonra tahmin formu tekrar aktif olur ve diğer kullanıcıların tahminleri gösterilmez.
+
 ## Kontroller
 
 ```bash
