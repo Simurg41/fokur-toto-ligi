@@ -22,7 +22,6 @@ begin
     insert into public.seasons (name, starts_at, ends_at, is_active)
     values ('Demo Sezon', current_date, current_date + 90, true)
     returning id into demo_season_id;
-  else
   end if;
 
   update public.seasons

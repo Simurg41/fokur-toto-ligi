@@ -26,6 +26,22 @@ type Prediction = {
   pick: Pick;
 };
 
+type PublicPrediction = Prediction & {
+  user_id: string;
+};
+
+type Profile = {
+  id: string;
+  display_name: string | null;
+};
+
+type UserPredictionGroup = {
+  userId: string;
+  label: string;
+  picks: Record<string, Pick>;
+  count: number;
+};
+
 type Message = {
   type: "success" | "warning" | "error";
   text: string;
@@ -36,6 +52,7 @@ export default function PredictionsPage() {
   const [week, setWeek] = useState<Week | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [choices, setChoices] = useState<Record<string, Pick>>({});
+  const [allPredictionGroups, setAllPredictionGroups] = useState<UserPredictionGroup[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -94,6 +111,7 @@ export default function PredictionsPage() {
         setWeek(null);
         setMatches([]);
         setChoices({});
+        setAllPredictionGroups([]);
         setIsLoading(false);
         return;
       }
@@ -105,6 +123,7 @@ export default function PredictionsPage() {
         opens_at: weekData.opens_at,
         closes_at: weekData.closes_at,
       };
+      const activeWeekIsClosed = new Date() >= new Date(activeWeek.closes_at);
 
       setWeek(activeWeek);
 
@@ -135,6 +154,7 @@ export default function PredictionsPage() {
         return;
       }
 
+      const loadedMatches = (matchData || []) as Match[];
       const existingChoices = ((predictionData || []) as Prediction[]).reduce<Record<string, Pick>>(
         (current, prediction) => ({
           ...current,
@@ -143,8 +163,72 @@ export default function PredictionsPage() {
         {},
       );
 
-      setMatches((matchData || []) as Match[]);
+      setMatches(loadedMatches);
       setChoices(existingChoices);
+
+      if (!activeWeekIsClosed) {
+        setAllPredictionGroups([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: publicPredictionData, error: publicPredictionError } = await supabase
+        .from("predictions")
+        .select("user_id, match_id, pick")
+        .eq("week_id", activeWeek.id);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (publicPredictionError) {
+        setAllPredictionGroups([]);
+        setMessage({ type: "error", text: publicPredictionError.message });
+        setIsLoading(false);
+        return;
+      }
+
+      const publicPredictions = (publicPredictionData || []) as PublicPrediction[];
+      const userIds = Array.from(new Set(publicPredictions.map((prediction) => prediction.user_id)));
+      let profiles: Profile[] = [];
+
+      if (userIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", userIds);
+
+        profiles = (profileData || []) as Profile[];
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      const profileByUserId = new Map(profiles.map((profile) => [profile.id, profile]));
+      const grouped = publicPredictions.reduce<Map<string, UserPredictionGroup>>((current, prediction) => {
+        const profile = profileByUserId.get(prediction.user_id);
+        const label =
+          profile?.display_name?.trim() ||
+          (prediction.user_id === user.id ? user.email || "" : "") ||
+          "Kullanıcı";
+        const existing = current.get(prediction.user_id) || {
+          userId: prediction.user_id,
+          label,
+          picks: {},
+          count: 0,
+        };
+
+        existing.picks[prediction.match_id] = prediction.pick;
+        existing.count = Object.keys(existing.picks).length;
+        current.set(prediction.user_id, existing);
+
+        return current;
+      }, new Map());
+
+      setAllPredictionGroups(
+        Array.from(grouped.values()).sort((first, second) => first.label.localeCompare(second.label, "tr")),
+      );
       setIsLoading(false);
     }
 
@@ -169,16 +253,12 @@ export default function PredictionsPage() {
     setMessage(null);
 
     const supabase = createClient();
-    const rows = matches.map((match) => {
-      const pick = choices[match.id];
-
-      return {
-        week_id: week.id,
-        match_id: match.id,
-        user_id: userId,
-        pick,
-      };
-    });
+    const rows = matches.map((match) => ({
+      week_id: week.id,
+      match_id: match.id,
+      user_id: userId,
+      pick: choices[match.id] as Pick,
+    }));
 
     const { error } = await supabase.from("predictions").upsert(rows, {
       onConflict: "week_id,match_id,user_id",
@@ -211,13 +291,13 @@ export default function PredictionsPage() {
 
       {isLoading ? (
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-600">Tahminler yukleniyor...</p>
+          <p className="text-sm text-slate-600">Tahminler yükleniyor...</p>
         </section>
       ) : null}
 
       {isEmpty ? (
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-base font-bold text-slate-950">Aktif hafta bulunamadi</h2>
+          <h2 className="text-base font-bold text-slate-950">Aktif hafta bulunamadı</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Henüz açık bir hafta veya maç listesi yok. Demo veri için Supabase SQL Editor içinde
             `supabase/seed-demo-week.sql` dosyasını çalıştır.
@@ -297,19 +377,85 @@ export default function PredictionsPage() {
 
           {message ? <StatusMessage message={message} /> : null}
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving || isClosed}
-            className="h-12 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isClosed ? "Tahmin süresi doldu" : isSaving ? "Kaydediliyor..." : "Tahminleri Kaydet"}
-          </button>
+          {!isClosed ? (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="h-12 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Kaydediliyor..." : "Tahminleri Kaydet"}
+            </button>
+          ) : null}
+
+          {isClosed ? (
+            <AllPredictionsSection groups={allPredictionGroups} matches={matches} />
+          ) : null}
         </>
       ) : null}
 
       {!week || matches.length === 0 ? (message ? <StatusMessage message={message} /> : null) : null}
     </div>
+  );
+}
+
+function AllPredictionsSection({
+  groups,
+  matches,
+}: {
+  groups: UserPredictionGroup[];
+  matches: Match[];
+}) {
+  return (
+    <section className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold text-teal-700">Kapalı hafta</p>
+        <h2 className="mt-1 text-xl font-bold text-slate-950">Herkesin Tahminleri</h2>
+      </div>
+
+      {groups.length === 0 ? (
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm leading-6 text-slate-600">
+            Bu hafta için gösterilecek tahmin bulunamadı.
+          </p>
+        </div>
+      ) : null}
+
+      {groups.map((group) => (
+        <article
+          key={group.userId}
+          className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-base font-bold text-slate-950">{group.label}</h3>
+            <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              {group.count}/{matches.length} tahmin
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {matches.map((match) => {
+              const matchLabel =
+                match.home_team && match.away_team
+                  ? `${match.home_team} - ${match.away_team}`
+                  : `Maç ${match.position}`;
+
+              return (
+              <div
+                key={`${group.userId}-${match.id}`}
+                className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+              >
+                <p className="text-sm font-semibold text-slate-700">{matchLabel}</p>
+                <p className="shrink-0 text-base font-bold text-slate-950">
+                  {group.picks[match.id] || "-"}
+                </p>
+              </div>
+              );
+            })}
+          </div>
+        </article>
+      ))}
+    </section>
   );
 }
 
