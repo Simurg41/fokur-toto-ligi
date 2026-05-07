@@ -122,6 +122,16 @@ https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId=1512
 
 `gameRoundId` bulmak için tarayıcıda resmî Spor Toto sayfasını açıp DevTools Network sekmesinde `GetGameMatches` isteğini arayabilirsin. İstek URL'sindeki `gameRoundId` değerini `/admin` içindeki alana girip "Resmî Listeden Önizle" butonuna bas.
 
+Admin panelindeki "Yayınlanmış Haftaları Getir" alanı sezon yılına göre resmî yayınlanmış haftaları listeler. Varsayılan sezon yılı `2025/2026` değeridir. Bir hafta seçildiğinde hem maç listesi hem de sonuç importu için `gameRoundId` alanları doldurulur; admin yine de önizleme ve onay adımlarını kullanır. İstersen `gameRoundId` alanlarını manuel yazmaya devam edebilirsin.
+
+Yayınlanmış hafta listesi için kullanılan endpoint:
+
+```text
+https://webapi.sportoto.gov.tr/api/GameRound?year=2025%2F2026&isPublished=true
+```
+
+Endpoint sabiti `app/api/spor-toto/rounds/route.ts` içindedir. Resmî yol değişirse bu sabit güncellenebilir.
+
 Bu işlem veritabanına otomatik yazmaz. Admin önce 15 maçlık listeyi önizler, hafta adı/numarası ve tahmin zamanlarını kontrol eder, sonra "Önizlenen Listeyle Hafta Oluştur" ile onaylarsa kayıt yapılır. Bu önizleme/onay adımı yanlış veri girişine karşı bilinçli olarak korunmuştur.
 
 Resmî API uç noktası ileride değişebilir; böyle bir durumda `app/api/spor-toto/matches` ve parser güncellenmelidir. Resmî sonuç importu, cron veya otomatik mevcut hafta tespiti henüz yoktur.

@@ -8,6 +8,7 @@ import {
   type ParsedSporTotoMatch,
 } from "@/lib/spor-toto/parse-pasted-list";
 import type { ParsedOfficialResultRow } from "@/lib/spor-toto/parse-official-results";
+import type { ParsedOfficialRound } from "@/lib/spor-toto/parse-official-rounds";
 
 type Result = "" | "1" | "X" | "2" | "void";
 
@@ -89,6 +90,11 @@ export default function AdminPage() {
   const [officialResultDrafts, setOfficialResultDrafts] = useState<Record<number, Result>>({});
   const [officialResultErrors, setOfficialResultErrors] = useState<string[]>([]);
   const [officialResultWarnings, setOfficialResultWarnings] = useState<string[]>([]);
+  const [roundYear, setRoundYear] = useState("2025/2026");
+  const [isFetchingRounds, setIsFetchingRounds] = useState(false);
+  const [officialRounds, setOfficialRounds] = useState<ParsedOfficialRound[]>([]);
+  const [roundErrors, setRoundErrors] = useState<string[]>([]);
+  const [roundWarnings, setRoundWarnings] = useState<string[]>([]);
 
   const predictionsAreOpen = useMemo(() => {
     if (!week) {
@@ -484,6 +490,56 @@ export default function AdminPage() {
     }
   }
 
+  async function fetchOfficialRounds() {
+    setIsFetchingRounds(true);
+    setRoundErrors([]);
+    setRoundWarnings([]);
+
+    try {
+      const response = await fetch(
+        `/api/spor-toto/rounds?year=${encodeURIComponent(roundYear)}&isPublished=true`,
+      );
+      const payload = (await response.json()) as {
+        ok: boolean;
+        rounds?: ParsedOfficialRound[];
+        warnings?: string[];
+        errors?: string[];
+      };
+
+      if (!response.ok || !payload.ok || !payload.rounds) {
+        setOfficialRounds([]);
+        setRoundErrors(payload.errors || ["Yayınlanmış haftalar getirilemedi."]);
+        return;
+      }
+
+      setOfficialRounds(payload.rounds);
+      setRoundWarnings(payload.warnings || []);
+    } catch {
+      setOfficialRounds([]);
+      setRoundErrors(["Yayınlanmış haftalar getirilirken bağlantı hatası oluştu."]);
+    } finally {
+      setIsFetchingRounds(false);
+    }
+  }
+
+  function selectOfficialRound(gameRoundIdValue: string) {
+    const selectedRound = officialRounds.find(
+      (round) => String(round.gameRoundId) === gameRoundIdValue,
+    );
+
+    if (!selectedRound) {
+      return;
+    }
+
+    const idValue = String(selectedRound.gameRoundId);
+    setOfficialGameRoundId(idValue);
+    setOfficialResultGameRoundId(idValue);
+
+    if (!importWeekName.trim()) {
+      setImportWeekName(formatRoundName(selectedRound));
+    }
+  }
+
   async function previewOfficialResults() {
     if (!/^[1-9]\d*$/.test(officialResultGameRoundId)) {
       setOfficialResultPreview([]);
@@ -836,11 +892,19 @@ export default function AdminPage() {
           setImportClosesAt={setImportClosesAt}
           previewImportList={previewImportList}
           createImportedWeek={createImportedWeek}
-          officialGameRoundId={officialGameRoundId}
-          isFetchingOfficial={isFetchingOfficial}
-          setOfficialGameRoundId={setOfficialGameRoundId}
-          previewOfficialList={previewOfficialList}
-        />
+        officialGameRoundId={officialGameRoundId}
+        isFetchingOfficial={isFetchingOfficial}
+        setOfficialGameRoundId={setOfficialGameRoundId}
+        previewOfficialList={previewOfficialList}
+        roundYear={roundYear}
+        isFetchingRounds={isFetchingRounds}
+        rounds={officialRounds}
+        roundErrors={roundErrors}
+        roundWarnings={roundWarnings}
+        setRoundYear={setRoundYear}
+        fetchOfficialRounds={fetchOfficialRounds}
+        selectOfficialRound={selectOfficialRound}
+      />
         <BackToAdminTop />
       </section>
 
@@ -1291,6 +1355,14 @@ function ImportPreviewSection({
   isFetchingOfficial,
   setOfficialGameRoundId,
   previewOfficialList,
+  roundYear,
+  isFetchingRounds,
+  rounds,
+  roundErrors,
+  roundWarnings,
+  setRoundYear,
+  fetchOfficialRounds,
+  selectOfficialRound,
 }: {
   isWorking: boolean;
   importText: string;
@@ -1311,6 +1383,14 @@ function ImportPreviewSection({
   isFetchingOfficial: boolean;
   setOfficialGameRoundId: (value: string) => void;
   previewOfficialList: () => void;
+  roundYear: string;
+  isFetchingRounds: boolean;
+  rounds: ParsedOfficialRound[];
+  roundErrors: string[];
+  roundWarnings: string[];
+  setRoundYear: (value: string) => void;
+  fetchOfficialRounds: () => void;
+  selectOfficialRound: (gameRoundIdValue: string) => void;
 }) {
   return (
     <section className="space-y-4">
@@ -1321,6 +1401,53 @@ function ImportPreviewSection({
           Resmî Spor Toto listesini önce önizle, sonra onaylarsan yeni hafta olarak kaydet.
         </p>
       </div>
+
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div>
+          <p className="text-sm font-bold text-slate-900">Yayınlanmış Haftaları Getir</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Resmî listeden yayınlanmış haftaları getirip gameRoundId alanlarını otomatik doldur.
+          </p>
+        </div>
+        <TextInput label="Sezon yılı" value={roundYear} onChange={setRoundYear} placeholder="2025/2026" />
+        <button
+          type="button"
+          onClick={fetchOfficialRounds}
+          disabled={isWorking || isFetchingRounds}
+          className="h-11 w-full rounded-md bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-60"
+        >
+          {isFetchingRounds ? "Yayınlanmış haftalar getiriliyor..." : "Haftaları Getir"}
+        </button>
+
+        {roundErrors.length > 0 ? (
+          <MessageList title="Hafta listesi hataları" messages={roundErrors} tone="error" />
+        ) : null}
+
+        {roundWarnings.length > 0 ? (
+          <MessageList title="Hafta listesi uyarıları" messages={roundWarnings} tone="warning" />
+        ) : null}
+
+        {rounds.length > 0 ? (
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-600">Yayınlanmış hafta seç</span>
+            <select
+              defaultValue=""
+              onChange={(event) => selectOfficialRound(event.target.value)}
+              className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none focus:border-teal-600"
+            >
+              <option value="" disabled>
+                Hafta seç
+              </option>
+              {rounds.map((round) => (
+                <option key={round.gameRoundId} value={round.gameRoundId}>
+                  {formatRoundName(round)} — ID: {round.gameRoundId}
+                  {round.closeDate ? ` — ${formatDate(round.closeDate)}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </section>
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div>
@@ -1449,6 +1576,32 @@ function ImportPreviewSection({
   );
 }
 
+function MessageList({
+  title,
+  messages,
+  tone,
+}: {
+  title: string;
+  messages: string[];
+  tone: "error" | "warning";
+}) {
+  const styles =
+    tone === "error"
+      ? "border-red-200 bg-red-50 text-red-700"
+      : "border-amber-200 bg-amber-50 text-amber-700";
+
+  return (
+    <section className={`rounded-lg border p-4 ${styles}`}>
+      <p className="text-sm font-bold">{title}</p>
+      <ul className="mt-2 space-y-1 text-sm">
+        {messages.map((message) => (
+          <li key={message}>{message}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function TextInput({
   label,
   value,
@@ -1551,4 +1704,8 @@ function buildTeamMismatchWarnings(importedRows: ParsedOfficialResultRow[], loca
 
 function normalizeTeamLabel(value: string) {
   return value.toLocaleLowerCase("tr-TR").replace(/\s+/g, " ").trim();
+}
+
+function formatRoundName(round: ParsedOfficialRound) {
+  return [round.year, round.name].filter(Boolean).join(" ");
 }
