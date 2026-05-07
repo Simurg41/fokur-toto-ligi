@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/browser";
 export default function PasswordResetPage() {
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
@@ -73,28 +74,48 @@ export default function PasswordResetPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Yeni şifre</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className="mt-2 h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-base text-slate-950 outline-none focus:border-teal-600"
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPasswords ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 pr-20 text-base text-slate-950 outline-none focus:border-teal-600"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswords((current) => !current)}
+                aria-label={showPasswords ? "Şifreyi gizle" : "Şifreyi göster"}
+                className="absolute inset-y-1 right-1 rounded-md px-3 text-sm font-bold text-teal-700"
+              >
+                {showPasswords ? "Gizle" : "Göster"}
+              </button>
+            </div>
           </label>
 
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Yeni şifre tekrar</span>
-            <input
-              type="password"
-              value={passwordAgain}
-              onChange={(event) => setPasswordAgain(event.target.value)}
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className="mt-2 h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-base text-slate-950 outline-none focus:border-teal-600"
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPasswords ? "text" : "password"}
+                value={passwordAgain}
+                onChange={(event) => setPasswordAgain(event.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 pr-20 text-base text-slate-950 outline-none focus:border-teal-600"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswords((current) => !current)}
+                aria-label={showPasswords ? "Şifreyi gizle" : "Şifreyi göster"}
+                className="absolute inset-y-1 right-1 rounded-md px-3 text-sm font-bold text-teal-700"
+              >
+                {showPasswords ? "Gizle" : "Göster"}
+              </button>
+            </div>
           </label>
 
           {message ? (
