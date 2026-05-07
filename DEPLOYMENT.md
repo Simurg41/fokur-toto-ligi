@@ -1,6 +1,6 @@
-# Deployment
+# Fokur Toto Ligi Deployment
 
-Bu doküman ilk Vercel yayını için kısa kontrol listesidir.
+Bu doküman Fokur Toto Ligi'nin ilk Vercel yayını için kısa kontrol listesidir.
 
 ## Vercel Adımları
 

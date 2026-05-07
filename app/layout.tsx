@@ -4,14 +4,14 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 
 export const metadata: Metadata = {
   title: {
-    default: "Spor Toto Tahmin",
-    template: "%s | Spor Toto Tahmin",
+    default: "Fokur Toto Ligi",
+    template: "%s | Fokur Toto Ligi",
   },
-  description: "Spor Toto kupon tahminlerini mobil odaklı takip et.",
+  description: "Fokur Toto Ligi kupon tahminlerini mobil odaklı takip et.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Spor Toto Tahmin",
+    title: "Fokur Toto Ligi",
     statusBarStyle: "default",
   },
 };

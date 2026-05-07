@@ -44,7 +44,7 @@ export default async function ProfilePage() {
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-100 text-lg font-bold text-teal-800">
-            ST
+            FT
           </div>
           <div className="min-w-0">
             <p className="truncate font-bold text-slate-950">{profileTitle}</p>
