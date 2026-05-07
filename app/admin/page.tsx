@@ -722,11 +722,15 @@ export default function AdminPage() {
   return (
     <AdminShell>
       {message ? <StatusMessage message={message} /> : null}
+      <AdminSectionNav />
 
-      <section className="space-y-4">
+      <section id="admin-hafta" className="scroll-mt-28 space-y-4">
         <div>
-          <p className="text-sm font-semibold text-teal-700">Aktif Hafta Yönetimi</p>
-          <h2 className="mt-1 text-xl font-bold text-slate-950">Son hafta</h2>
+          <p className="text-sm font-semibold text-teal-700">Aktif Hafta</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-950">Hafta durumu</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Aktif sezonun en yüksek hafta numarasına sahip haftasını yönet.
+          </p>
         </div>
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -762,16 +766,10 @@ export default function AdminPage() {
           >
             Haftayı Tekrar Aç
           </button>
-          <button
-            type="button"
-            onClick={recalculateScores}
-            disabled={isWorking || !week}
-            className="h-11 rounded-md bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-60"
-          >
-            Puanları Hesapla
-          </button>
         </div>
+      </section>
 
+      <section id="admin-mac-listesi" className="scroll-mt-28">
         <MatchManagement
           matches={matches}
           matchDrafts={matchDrafts}
@@ -782,7 +780,10 @@ export default function AdminPage() {
           saveMatchList={saveMatchList}
           saveResults={saveResults}
         />
+        <BackToAdminTop />
+      </section>
 
+      <section id="admin-sonuclar" className="scroll-mt-28 space-y-4">
         <OfficialResultsImportSection
           matches={matches}
           isWorking={isWorking}
@@ -797,45 +798,109 @@ export default function AdminPage() {
           previewOfficialResults={previewOfficialResults}
           applyOfficialResults={applyOfficialResults}
         />
+        <BackToAdminTop />
       </section>
 
-      <NewWeekForm
-        isWorking={isWorking}
-        newWeekName={newWeekName}
-        newWeekNumber={newWeekNumber}
-        newOpensAt={newOpensAt}
-        newClosesAt={newClosesAt}
-        newMatches={newMatches}
-        setNewWeekName={setNewWeekName}
-        setNewWeekNumber={setNewWeekNumber}
-        setNewOpensAt={setNewOpensAt}
-        setNewClosesAt={setNewClosesAt}
-        setNewMatches={setNewMatches}
-        createWeek={createWeek}
-      />
+      <section id="admin-puan" className="scroll-mt-28 space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-teal-700">Puan</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-950">Skor hesaplama</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Resmî sonuçları kaydettikten sonra haftalık ve sezon puanlarını hesapla.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={recalculateScores}
+          disabled={isWorking || !week}
+          className="h-11 w-full rounded-md bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-60"
+        >
+          Puanları Hesapla
+        </button>
+      </section>
 
-      <ImportPreviewSection
-        isWorking={isWorking}
-        importText={importText}
-        importWeekName={importWeekName}
-        importWeekNumber={importWeekNumber}
-        importOpensAt={importOpensAt}
-        importClosesAt={importClosesAt}
-        preview={importPreview}
-        errors={importErrors}
-        setImportText={setImportText}
-        setImportWeekName={setImportWeekName}
-        setImportWeekNumber={setImportWeekNumber}
-        setImportOpensAt={setImportOpensAt}
-        setImportClosesAt={setImportClosesAt}
-        previewImportList={previewImportList}
-        createImportedWeek={createImportedWeek}
-        officialGameRoundId={officialGameRoundId}
-        isFetchingOfficial={isFetchingOfficial}
-        setOfficialGameRoundId={setOfficialGameRoundId}
-        previewOfficialList={previewOfficialList}
-      />
+      <section id="admin-ice-aktar" className="scroll-mt-28">
+        <ImportPreviewSection
+          isWorking={isWorking}
+          importText={importText}
+          importWeekName={importWeekName}
+          importWeekNumber={importWeekNumber}
+          importOpensAt={importOpensAt}
+          importClosesAt={importClosesAt}
+          preview={importPreview}
+          errors={importErrors}
+          setImportText={setImportText}
+          setImportWeekName={setImportWeekName}
+          setImportWeekNumber={setImportWeekNumber}
+          setImportOpensAt={setImportOpensAt}
+          setImportClosesAt={setImportClosesAt}
+          previewImportList={previewImportList}
+          createImportedWeek={createImportedWeek}
+          officialGameRoundId={officialGameRoundId}
+          isFetchingOfficial={isFetchingOfficial}
+          setOfficialGameRoundId={setOfficialGameRoundId}
+          previewOfficialList={previewOfficialList}
+        />
+        <BackToAdminTop />
+      </section>
+
+      <section id="admin-yeni-hafta" className="scroll-mt-28">
+        <NewWeekForm
+          isWorking={isWorking}
+          newWeekName={newWeekName}
+          newWeekNumber={newWeekNumber}
+          newOpensAt={newOpensAt}
+          newClosesAt={newClosesAt}
+          newMatches={newMatches}
+          setNewWeekName={setNewWeekName}
+          setNewWeekNumber={setNewWeekNumber}
+          setNewOpensAt={setNewOpensAt}
+          setNewClosesAt={setNewClosesAt}
+          setNewMatches={setNewMatches}
+          createWeek={createWeek}
+        />
+        <BackToAdminTop />
+      </section>
     </AdminShell>
+  );
+}
+
+function AdminSectionNav() {
+  const items = [
+    { href: "#admin-hafta", label: "Hafta" },
+    { href: "#admin-mac-listesi", label: "Maç Listesi" },
+    { href: "#admin-sonuclar", label: "Sonuçlar" },
+    { href: "#admin-puan", label: "Puan" },
+    { href: "#admin-ice-aktar", label: "İçe Aktar" },
+    { href: "#admin-yeni-hafta", label: "Yeni Hafta" },
+  ];
+
+  return (
+    <nav
+      id="admin-top"
+      className="sticky top-0 z-10 -mx-4 border-y border-slate-200 bg-white/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6"
+      aria-label="Admin bölümleri"
+    >
+      <div className="flex gap-2 overflow-x-auto">
+        {items.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="flex h-10 shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700"
+          >
+            {item.label}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function BackToAdminTop() {
+  return (
+    <a href="#admin-top" className="mt-3 inline-flex text-sm font-bold text-teal-700">
+      Yukarı dön
+    </a>
   );
 }
 
@@ -862,7 +927,10 @@ function MatchManagement({
     <section className="space-y-3">
       <div>
         <p className="text-sm font-semibold text-teal-700">Maç Listesi</p>
-        <h2 className="mt-1 text-lg font-bold text-slate-950">Takım ve sonuç yönetimi</h2>
+        <h2 className="mt-1 text-lg font-bold text-slate-950">Takım ve saat düzenleme</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Aktif haftadaki maçların takım adlarını, başlama saatlerini ve manuel sonuçlarını düzenle.
+        </p>
       </div>
 
       {matches.map((match) => (
