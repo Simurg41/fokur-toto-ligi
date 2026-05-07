@@ -1,4 +1,14 @@
-export default function ProfilePage() {
+import { LogoutButton } from "@/components/logout-button";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+
+export default async function ProfilePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <div className="space-y-4">
       <header>
@@ -13,9 +23,12 @@ export default function ProfilePage() {
           </div>
           <div>
             <p className="font-bold text-slate-950">Spor Toto Tahmin</p>
-            <p className="text-sm text-slate-500">Giriş sistemi henüz eklenmedi.</p>
+            <p className="text-sm text-slate-500">
+              {user?.email ? `${user.email} ile giriş yapıldı.` : "Giriş bilgisi bulunamadı."}
+            </p>
           </div>
         </div>
+        <LogoutButton />
       </section>
     </div>
   );
