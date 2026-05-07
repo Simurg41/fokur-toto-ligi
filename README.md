@@ -44,7 +44,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 3. Supabase SQL Editor içinde önce `supabase/schema.sql` dosyasındaki SQL'i çalıştır.
 4. Demo sezon, açık hafta ve 15 maç oluşturmak için ardından `supabase/seed-demo-week.sql` dosyasındaki SQL'i çalıştır.
-5. Supabase Auth ayarlarında Email provider'ın açık olduğundan emin ol.
+5. Admin rolü, admin RLS politikaları ve puan hesaplama RPC fonksiyonu için `supabase/add-admin-role-and-admin-tools.sql` çalıştır.
+6. Supabase Auth ayarlarında Email provider'ın açık olduğundan emin ol.
 
 `.env.local` git'e eklenmez. GitHub Actions içinde gerçek Supabase değerleri zorunlu değildir; uygulama build sırasında güvenli placeholder değerlerle derlenebilir.
 
@@ -73,6 +74,18 @@ Haftayı sadece tekrar tahmine açmak için:
 ```
 
 Hafta açıkken `/tahminler` ekranında kullanıcı yalnızca kendi tahminlerini görür. Hafta kapandıktan sonra seçim butonları pasif olur, kayıt butonu gizlenir ve "Herkesin Tahminleri" bölümü görünür.
+
+## Admin Paneli
+
+Kendini admin yapmak için `supabase/make-user-admin.example.sql` dosyasındaki örneği kendi e-posta adresinle düzenleyip Supabase SQL Editor içinde çalıştır.
+
+Admin kullanıcılar alt menüde `/admin` bağlantısını görür. Bu sayfa aktif sezonun son haftası için manuel yönetim sağlar:
+
+- Haftayı kapatır veya tekrar açar.
+- 15 maç için resmi sonucu `Boş`, `1`, `X`, `2` veya `void` olarak kaydeder.
+- `recalculate_scores_for_week` RPC fonksiyonu ile puanları hesaplar.
+
+Bu panel otomatik Spor Toto importu gelmeden önce manuel yedek yönetim aracı olarak tasarlanmıştır. Service role key kullanılmaz.
 
 ## Kontroller
 
