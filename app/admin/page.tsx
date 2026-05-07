@@ -3,6 +3,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import {
+  parsePastedSporTotoList,
+  type ParsedSporTotoMatch,
+} from "@/lib/spor-toto/parse-pasted-list";
 
 type Result = "" | "1" | "X" | "2" | "void";
 
@@ -69,6 +73,13 @@ export default function AdminPage() {
   const [newOpensAt, setNewOpensAt] = useState("");
   const [newClosesAt, setNewClosesAt] = useState("");
   const [newMatches, setNewMatches] = useState<MatchDraft[]>(emptyMatchDrafts);
+  const [importText, setImportText] = useState("");
+  const [importWeekName, setImportWeekName] = useState("");
+  const [importWeekNumber, setImportWeekNumber] = useState("");
+  const [importOpensAt, setImportOpensAt] = useState("");
+  const [importClosesAt, setImportClosesAt] = useState("");
+  const [importPreview, setImportPreview] = useState<ParsedSporTotoMatch[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const predictionsAreOpen = useMemo(() => {
     if (!week) {
@@ -410,27 +421,104 @@ export default function AdminPage() {
     await loadActiveWeek();
   }
 
+  function previewImportList() {
+    const result = parsePastedSporTotoList(importText);
+
+    if (!result.success) {
+      setImportPreview([]);
+      setImportErrors(result.errors);
+      return;
+    }
+
+    setImportPreview(result.matches);
+    setImportErrors([]);
+  }
+
+  async function createImportedWeek() {
+    if (!season) {
+      setMessage({ type: "error", text: "Aktif sezon bulunamadı." });
+      return;
+    }
+
+    if (importPreview.length !== 15) {
+      setImportErrors(["Önce geçerli bir 15 maçlık liste önizle."]);
+      return;
+    }
+
+    const validationError = validateWeekFields(
+      importWeekName,
+      importWeekNumber,
+      importOpensAt,
+      importClosesAt,
+    );
+
+    if (validationError) {
+      setMessage({ type: "error", text: validationError });
+      return;
+    }
+
+    setIsWorking(true);
+    setMessage(null);
+
+    const supabase = createClient();
+    const { data: createdWeek, error: weekError } = await supabase
+      .from("weeks")
+      .insert({
+        season_id: season.id,
+        week_number: Number(importWeekNumber),
+        name: importWeekName.trim(),
+        opens_at: new Date(importOpensAt).toISOString(),
+        closes_at: new Date(importClosesAt).toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (weekError || !createdWeek) {
+      setIsWorking(false);
+      setMessage({
+        type: "error",
+        text:
+          weekError?.code === "23505"
+            ? "Bu sezon için bu hafta numarası zaten var."
+            : weekError?.message || "Hafta oluşturulamadı.",
+      });
+      return;
+    }
+
+    const { error: matchesError } = await supabase.from("matches").insert(
+      importPreview.map((match) => ({
+        week_id: createdWeek.id,
+        position: match.position,
+        home_team: match.home_team,
+        away_team: match.away_team,
+        starts_at: match.starts_at ? new Date(match.starts_at).toISOString() : null,
+        official_result: null,
+      })),
+    );
+
+    setIsWorking(false);
+
+    if (matchesError) {
+      setMessage({ type: "error", text: matchesError.message });
+      return;
+    }
+
+    setImportText("");
+    setImportWeekName("");
+    setImportWeekNumber("");
+    setImportOpensAt("");
+    setImportClosesAt("");
+    setImportPreview([]);
+    setImportErrors([]);
+    setMessage({ type: "success", text: "Önizlenen listeyle yeni hafta oluşturuldu." });
+    await loadActiveWeek();
+  }
+
   function validateNewWeek() {
-    if (!newWeekName.trim()) {
-      return "Hafta adı gerekli.";
-    }
+    const fieldError = validateWeekFields(newWeekName, newWeekNumber, newOpensAt, newClosesAt);
 
-    const weekNumber = Number(newWeekNumber);
-
-    if (!newWeekNumber || !Number.isInteger(weekNumber) || weekNumber <= 0) {
-      return "Hafta numarası pozitif bir sayı olmalı.";
-    }
-
-    if (!newOpensAt) {
-      return "Tahmin açılış zamanı gerekli.";
-    }
-
-    if (!newClosesAt) {
-      return "Tahmin kapanış zamanı gerekli.";
-    }
-
-    if (new Date(newClosesAt) <= new Date(newOpensAt)) {
-      return "Tahmin kapanış zamanı açılıştan sonra olmalı.";
+    if (fieldError) {
+      return fieldError;
     }
 
     const missingMatch = newMatches.find(
@@ -439,6 +527,32 @@ export default function AdminPage() {
 
     if (missingMatch) {
       return "15 maçın tamamı için ev sahibi ve deplasman gerekli.";
+    }
+
+    return "";
+  }
+
+  function validateWeekFields(name: string, weekNumberValue: string, opensAt: string, closesAt: string) {
+    if (!name.trim()) {
+      return "Hafta adı gerekli.";
+    }
+
+    const weekNumber = Number(weekNumberValue);
+
+    if (!weekNumberValue || !Number.isInteger(weekNumber) || weekNumber <= 0) {
+      return "Hafta numarası pozitif bir sayı olmalı.";
+    }
+
+    if (!opensAt) {
+      return "Tahmin açılış zamanı gerekli.";
+    }
+
+    if (!closesAt) {
+      return "Tahmin kapanış zamanı gerekli.";
+    }
+
+    if (new Date(closesAt) <= new Date(opensAt)) {
+      return "Tahmin kapanış zamanı açılıştan sonra olmalı.";
     }
 
     return "";
@@ -538,6 +652,24 @@ export default function AdminPage() {
         setNewClosesAt={setNewClosesAt}
         setNewMatches={setNewMatches}
         createWeek={createWeek}
+      />
+
+      <ImportPreviewSection
+        isWorking={isWorking}
+        importText={importText}
+        importWeekName={importWeekName}
+        importWeekNumber={importWeekNumber}
+        importOpensAt={importOpensAt}
+        importClosesAt={importClosesAt}
+        preview={importPreview}
+        errors={importErrors}
+        setImportText={setImportText}
+        setImportWeekName={setImportWeekName}
+        setImportWeekNumber={setImportWeekNumber}
+        setImportOpensAt={setImportOpensAt}
+        setImportClosesAt={setImportClosesAt}
+        previewImportList={previewImportList}
+        createImportedWeek={createImportedWeek}
       />
     </AdminShell>
   );
@@ -766,6 +898,150 @@ function NewWeekForm({
         Yeni Haftayı Oluştur
       </button>
     </form>
+  );
+}
+
+function ImportPreviewSection({
+  isWorking,
+  importText,
+  importWeekName,
+  importWeekNumber,
+  importOpensAt,
+  importClosesAt,
+  preview,
+  errors,
+  setImportText,
+  setImportWeekName,
+  setImportWeekNumber,
+  setImportOpensAt,
+  setImportClosesAt,
+  previewImportList,
+  createImportedWeek,
+}: {
+  isWorking: boolean;
+  importText: string;
+  importWeekName: string;
+  importWeekNumber: string;
+  importOpensAt: string;
+  importClosesAt: string;
+  preview: ParsedSporTotoMatch[];
+  errors: string[];
+  setImportText: (value: string) => void;
+  setImportWeekName: (value: string) => void;
+  setImportWeekNumber: (value: string) => void;
+  setImportOpensAt: (value: string) => void;
+  setImportClosesAt: (value: string) => void;
+  previewImportList: () => void;
+  createImportedWeek: () => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <p className="text-sm font-semibold text-teal-700">Spor Toto Listesi İçe Aktar</p>
+        <h2 className="mt-1 text-xl font-bold text-slate-950">Önizle ve onayla</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Resmî Spor Toto listesini önce önizle, sonra onaylarsan yeni hafta olarak kaydet.
+        </p>
+      </div>
+
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-600">Yapıştırılan liste</span>
+          <textarea
+            value={importText}
+            onChange={(event) => setImportText(event.target.value)}
+            rows={8}
+            className="mt-2 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-teal-600"
+          />
+        </label>
+        <p className="text-xs leading-5 text-slate-500">
+          Desteklenen format: `1;Galatasaray;Fenerbahçe;2026-05-08T20:00`
+          satır satır 15 maç. Maç zamanı isteğe bağlıdır.
+        </p>
+        <button
+          type="button"
+          onClick={previewImportList}
+          disabled={isWorking}
+          className="h-11 w-full rounded-md bg-slate-900 px-4 text-sm font-bold text-white disabled:opacity-60"
+        >
+          Listeyi Önizle
+        </button>
+      </section>
+
+      {errors.length > 0 ? (
+        <section className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-bold text-red-800">Önizleme hataları</p>
+          <ul className="mt-2 space-y-1 text-sm text-red-700">
+            {errors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {preview.length > 0 ? (
+        <section className="space-y-3">
+          <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
+            <p className="text-sm font-bold text-teal-800">15 maç başarıyla önizlendi.</p>
+          </div>
+          {preview.map((match) => (
+            <article
+              key={match.position}
+              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <p className="text-xs font-bold uppercase tracking-normal text-slate-400">
+                Maç {match.position}
+              </p>
+              <h3 className="mt-1 text-base font-bold text-slate-950">
+                {match.home_team} - {match.away_team}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                {match.starts_at ? formatDate(match.starts_at) : "Maç zamanı yok"}
+              </p>
+            </article>
+          ))}
+        </section>
+      ) : null}
+
+      <section className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <TextInput label="Hafta adı" value={importWeekName} onChange={setImportWeekName} placeholder="2. Hafta" />
+        <TextInput
+          label="Hafta numarası"
+          type="number"
+          value={importWeekNumber}
+          onChange={setImportWeekNumber}
+          min="1"
+        />
+        <TextInput
+          label="Tahmin açılış zamanı"
+          type="datetime-local"
+          value={importOpensAt}
+          onChange={setImportOpensAt}
+        />
+        <TextInput
+          label="Tahmin kapanış zamanı"
+          type="datetime-local"
+          value={importClosesAt}
+          onChange={setImportClosesAt}
+        />
+        <button
+          type="button"
+          onClick={createImportedWeek}
+          disabled={isWorking || preview.length !== 15}
+          className="h-12 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+        >
+          Önizlenen Listeyle Hafta Oluştur
+        </button>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm font-bold text-slate-800">Resmî siteden otomatik çekme</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Bu bölüm bir sonraki adımda resmî Spor Toto sayfası veya indirilebilir liste dosyası
+          incelendikten sonra aktif edilecek.
+        </p>
+      </section>
+    </section>
   );
 }
 

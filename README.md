@@ -92,6 +92,22 @@ Uygulama aktif sezon içindeki en yüksek `week_number` değerine sahip haftayı
 
 Yeni hafta oluşturmak için `/admin` içindeki "Yeni Hafta Oluştur" formunda hafta adı, hafta numarası, tahmin açılış/kapanış zamanı ve 15 maçın ev sahibi/deplasman bilgileri girilir. Maç zamanı isteğe bağlıdır. Oluşturduktan sonra aynı sayfadaki "Aktif Hafta Yönetimi" bölümünden maç listesi manuel olarak güncellenebilir.
 
+## Spor Toto Liste İçe Aktarma
+
+`/admin` içindeki "Spor Toto Listesi İçe Aktar" bölümü 15 maçlık listeyi önce önizler, yalnızca admin onaylarsa yeni hafta olarak kaydeder. Bu akış yanlış veri girişine karşı bilinçli bir kontrol adımı sağlar.
+
+Desteklenen yapıştırma formatı satır başına noktalı virgül ile ayrılmıştır:
+
+```text
+1;Galatasaray;Fenerbahçe;2026-05-08T20:00
+2;Beşiktaş;Trabzonspor;2026-05-09T19:00
+3;Samsunspor;Konyaspor
+```
+
+Her satır `pozisyon;ev sahibi;deplasman;maç zamanı` biçimindedir. Maç zamanı isteğe bağlıdır, ancak varsa geçerli bir tarih olmalıdır. Liste tam 15 geçerli maç içermelidir.
+
+Resmî siteden otomatik çekme özellikle kapalı tutulmuştur. Bu özellik, resmî Spor Toto sayfası veya indirilebilir liste dosyası ayrıca incelendikten sonra eklenebilir.
+
 Bu panel otomatik Spor Toto importu gelmeden önce manuel yedek yönetim aracı olarak tasarlanmıştır. Service role key kullanılmaz.
 
 ## Kontroller
