@@ -8,6 +8,7 @@ const protectedRoutes = [
   "/puan-tablosu",
   "/profil",
   "/haftalar",
+  "/sezon",
   "/admin",
 ];
 

@@ -39,6 +39,17 @@ export default function HomePage() {
         </p>
       </Link>
 
+      <Link
+        href="/sezon"
+        className="block rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm transition hover:border-teal-400"
+      >
+        <p className="text-sm font-semibold text-teal-700">Sezon Özeti</p>
+        <h2 className="mt-1 text-lg font-bold text-slate-950">Liderleri ve istatistikleri gör</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Sezon liderini, haftalık kazananları ve oyuncu performanslarını takip et.
+        </p>
+      </Link>
+
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-lg font-bold text-slate-950">Baslangic surumu</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
