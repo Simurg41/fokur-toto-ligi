@@ -22,8 +22,8 @@ type OfficialMatchItem = {
   gameRoundName?: unknown;
   match?: {
     date?: unknown;
-    homeTeam?: { name?: unknown };
-    awayTeam?: { name?: unknown };
+    homeTeam?: { name?: unknown; externalTeamId?: unknown };
+    awayTeam?: { name?: unknown; externalTeamId?: unknown };
   };
 };
 
@@ -48,6 +48,8 @@ export function parseOfficialMatches(input: unknown): ParseOfficialMatchesResult
     const lineNumber = index + 1;
     const homeTeam = readString(item.match?.homeTeam?.name);
     const awayTeam = readString(item.match?.awayTeam?.name);
+    const homeExternalTeamId = readPositiveInteger(item.match?.homeTeam?.externalTeamId);
+    const awayExternalTeamId = readPositiveInteger(item.match?.awayTeam?.externalTeamId);
     const date = readString(item.match?.date);
 
     if (!homeTeam) {
@@ -67,6 +69,8 @@ export function parseOfficialMatches(input: unknown): ParseOfficialMatchesResult
       home_team: homeTeam,
       away_team: awayTeam,
       starts_at: date || null,
+      home_external_team_id: homeExternalTeamId,
+      away_external_team_id: awayExternalTeamId,
     };
   });
 
@@ -83,4 +87,9 @@ export function parseOfficialMatches(input: unknown): ParseOfficialMatchesResult
 
 function readString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function readPositiveInteger(value: unknown) {
+  const numberValue = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isInteger(numberValue) && numberValue > 0 ? numberValue : null;
 }

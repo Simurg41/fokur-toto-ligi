@@ -9,6 +9,7 @@ import {
 } from "@/lib/spor-toto/parse-pasted-list";
 import type { ParsedOfficialResultRow } from "@/lib/spor-toto/parse-official-results";
 import type { ParsedOfficialRound } from "@/lib/spor-toto/parse-official-rounds";
+import { TeamNameWithLogo } from "@/components/team-name-with-logo";
 
 type Result = "" | "1" | "X" | "2" | "void";
 
@@ -30,6 +31,8 @@ type Match = {
   position: number;
   home_team: string;
   away_team: string;
+  home_external_team_id: number | null;
+  away_external_team_id: number | null;
   starts_at: string | null;
   official_result: Result | null;
 };
@@ -197,7 +200,7 @@ export default function AdminPage() {
 
     const { data: matchData, error: matchError } = await supabase
       .from("matches")
-      .select("id, position, home_team, away_team, starts_at, official_result")
+      .select("id, position, home_team, away_team, home_external_team_id, away_external_team_id, starts_at, official_result")
       .eq("week_id", weekData.id)
       .order("position", { ascending: true });
 
@@ -415,6 +418,8 @@ export default function AdminPage() {
         position: index + 1,
         home_team: match.home_team.trim(),
         away_team: match.away_team.trim(),
+        home_external_team_id: null,
+        away_external_team_id: null,
         starts_at: match.starts_at ? new Date(match.starts_at).toISOString() : null,
         official_result: null,
       })),
@@ -692,6 +697,8 @@ export default function AdminPage() {
         position: match.position,
         home_team: match.home_team,
         away_team: match.away_team,
+        home_external_team_id: match.home_external_team_id ?? null,
+        away_external_team_id: match.away_external_team_id ?? null,
         starts_at: match.starts_at ? new Date(match.starts_at).toISOString() : null,
         official_result: null,
       })),
@@ -1005,6 +1012,16 @@ function MatchManagement({
           <p className="text-xs font-bold uppercase tracking-normal text-slate-400">
             Maç {match.position}
           </p>
+          <div className="mt-2 space-y-1">
+            <TeamNameWithLogo
+              name={match.home_team}
+              externalTeamId={match.home_external_team_id}
+            />
+            <TeamNameWithLogo
+              name={match.away_team}
+              externalTeamId={match.away_external_team_id}
+            />
+          </div>
           <div className="mt-3 grid gap-3">
             <TextInput
               label="Ev sahibi"
@@ -1523,9 +1540,18 @@ function ImportPreviewSection({
               <p className="text-xs font-bold uppercase tracking-normal text-slate-400">
                 Maç {match.position}
               </p>
-              <h3 className="mt-1 text-base font-bold text-slate-950">
-                {match.home_team} - {match.away_team}
-              </h3>
+              <div className="mt-2 space-y-1">
+                <TeamNameWithLogo
+                  name={match.home_team}
+                  externalTeamId={match.home_external_team_id}
+                  size="md"
+                />
+                <TeamNameWithLogo
+                  name={match.away_team}
+                  externalTeamId={match.away_external_team_id}
+                  size="md"
+                />
+              </div>
               <p className="mt-1 text-sm text-slate-500">
                 {match.starts_at ? formatDate(match.starts_at) : "Maç zamanı yok"}
               </p>

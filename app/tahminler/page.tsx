@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import { TeamNameWithLogo } from "@/components/team-name-with-logo";
 
 type Pick = "1" | "X" | "2";
 
@@ -19,6 +20,8 @@ type Match = {
   position: number;
   home_team: string;
   away_team: string;
+  home_external_team_id: number | null;
+  away_external_team_id: number | null;
 };
 
 type Prediction = {
@@ -151,7 +154,7 @@ export default function PredictionsPage() {
         await Promise.all([
           supabase
             .from("matches")
-            .select("id, position, home_team, away_team")
+            .select("id, position, home_team, away_team, home_external_team_id, away_external_team_id")
             .eq("week_id", activeWeek.id)
             .order("position", { ascending: true }),
           supabase
@@ -368,9 +371,18 @@ export default function PredictionsPage() {
                   <p className="text-xs font-bold uppercase tracking-normal text-slate-400">
                     Maç {match.position}
                   </p>
-                  <h2 className="mt-1 text-base font-bold text-slate-950">
-                    {match.home_team} - {match.away_team}
-                  </h2>
+                  <div className="mt-2 space-y-1">
+                    <TeamNameWithLogo
+                      name={match.home_team}
+                      externalTeamId={match.home_external_team_id}
+                      size="md"
+                    />
+                    <TeamNameWithLogo
+                      name={match.away_team}
+                      externalTeamId={match.away_external_team_id}
+                      size="md"
+                    />
+                  </div>
                 </div>
 
                 <div
@@ -533,17 +545,21 @@ function AllPredictionsSection({
 
           <div className="mt-4 space-y-2">
             {matches.map((match) => {
-              const matchLabel =
-                match.home_team && match.away_team
-                  ? `${match.home_team} - ${match.away_team}`
-                  : `Maç ${match.position}`;
-
               return (
               <div
                 key={`${group.userId}-${match.id}`}
                 className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
               >
-                <p className="text-sm font-semibold text-slate-700">{matchLabel}</p>
+                <div className="min-w-0 space-y-1">
+                  <TeamNameWithLogo
+                    name={match.home_team || `Maç ${match.position}`}
+                    externalTeamId={match.home_external_team_id}
+                  />
+                  <TeamNameWithLogo
+                    name={match.away_team || "-"}
+                    externalTeamId={match.away_external_team_id}
+                  />
+                </div>
                 <p className="shrink-0 text-base font-bold text-slate-950">
                   {group.picks[match.id] || "-"}
                 </p>

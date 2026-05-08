@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { TeamNameWithLogo } from "@/components/team-name-with-logo";
 
 type Pick = "1" | "X" | "2";
 type Result = Pick | "void" | null;
@@ -18,6 +19,8 @@ type Match = {
   position: number;
   home_team: string;
   away_team: string;
+  home_external_team_id: number | null;
+  away_external_team_id: number | null;
   official_result: Result;
 };
 
@@ -74,7 +77,7 @@ export default async function WeekDetailPage({ params }: PageProps) {
   ] = await Promise.all([
     supabase
       .from("matches")
-      .select("id, position, home_team, away_team, official_result")
+      .select("id, position, home_team, away_team, home_external_team_id, away_external_team_id, official_result")
       .eq("week_id", week.id)
       .order("position", { ascending: true }),
     supabase
@@ -219,9 +222,18 @@ function MatchHistoryCard({ match, pick }: { match: Match; pick?: Pick }) {
       <p className="text-xs font-bold uppercase tracking-normal text-slate-500">
         Maç {match.position}
       </p>
-      <h2 className="mt-1 text-base font-bold text-slate-950">
-        {match.home_team} - {match.away_team}
-      </h2>
+      <div className="mt-2 space-y-1">
+        <TeamNameWithLogo
+          name={match.home_team}
+          externalTeamId={match.home_external_team_id}
+          size="md"
+        />
+        <TeamNameWithLogo
+          name={match.away_team}
+          externalTeamId={match.away_external_team_id}
+          size="md"
+        />
+      </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="rounded-md bg-white/70 px-3 py-2">
           <p className="text-xs font-semibold text-slate-500">Senin tahminin</p>
