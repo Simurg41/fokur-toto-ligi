@@ -52,8 +52,10 @@ export default function PredictionsPage() {
   const [week, setWeek] = useState<Week | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [choices, setChoices] = useState<Record<string, Pick>>({});
+  const [savedChoices, setSavedChoices] = useState<Record<string, Pick>>({});
   const [allPredictionGroups, setAllPredictionGroups] = useState<UserPredictionGroup[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -62,6 +64,22 @@ export default function PredictionsPage() {
     () => matches.filter((match) => choices[match.id]).length,
     [choices, matches],
   );
+  const missingMatches = useMemo(
+    () => matches.filter((match) => !choices[match.id]).map((match) => match.position),
+    [choices, matches],
+  );
+  const hasUnsavedChanges = useMemo(
+    () => !areChoicesEqual(choices, savedChoices, matches),
+    [choices, matches, savedChoices],
+  );
+  const totalCount = matches.length || 15;
+  const missingCount = Math.max(totalCount - selectedCount, 0);
+  const progressPercent = matches.length > 0 ? Math.round((selectedCount / matches.length) * 100) : 0;
+  const saveStatusText = hasUnsavedChanges
+    ? "Kaydedilmemiş değişiklikler var"
+    : lastSavedAt
+      ? "Tahminler kaydedildi"
+      : "Tahminler güncel";
   const isClosed = week ? new Date() >= new Date(week.closes_at) : false;
   const isEmpty = !isLoading && (!week || matches.length === 0);
 
@@ -111,7 +129,9 @@ export default function PredictionsPage() {
         setWeek(null);
         setMatches([]);
         setChoices({});
+        setSavedChoices({});
         setAllPredictionGroups([]);
+        setLastSavedAt(null);
         setIsLoading(false);
         return;
       }
@@ -165,6 +185,8 @@ export default function PredictionsPage() {
 
       setMatches(loadedMatches);
       setChoices(existingChoices);
+      setSavedChoices(existingChoices);
+      setLastSavedAt(null);
 
       if (!activeWeekIsClosed) {
         setAllPredictionGroups([]);
@@ -271,6 +293,8 @@ export default function PredictionsPage() {
       return;
     }
 
+    setSavedChoices(choices);
+    setLastSavedAt(new Date());
     setMessage({ type: "success", text: "Tahminlerin kaydedildi." });
   }
 
@@ -307,6 +331,16 @@ export default function PredictionsPage() {
 
       {week && matches.length > 0 ? (
         <>
+          <ProgressSummary
+            selectedCount={selectedCount}
+            totalCount={totalCount}
+            missingCount={missingCount}
+            missingMatches={missingMatches}
+            progressPercent={progressPercent}
+            saveStatusText={saveStatusText}
+            lastSavedAt={lastSavedAt}
+          />
+
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-base font-bold text-slate-950">
               {week.name || `${week.week_number}. hafta`}
@@ -381,10 +415,14 @@ export default function PredictionsPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || (!hasUnsavedChanges && selectedCount === matches.length)}
               className="h-12 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Kaydediliyor..." : "Tahminleri Kaydet"}
+              {isSaving
+                ? "Kaydediliyor..."
+                : !hasUnsavedChanges && selectedCount === matches.length
+                  ? "Güncel"
+                  : "Tahminleri Kaydet"}
             </button>
           ) : null}
 
@@ -396,6 +434,66 @@ export default function PredictionsPage() {
 
       {!week || matches.length === 0 ? (message ? <StatusMessage message={message} /> : null) : null}
     </div>
+  );
+}
+
+function ProgressSummary({
+  selectedCount,
+  totalCount,
+  missingCount,
+  missingMatches,
+  progressPercent,
+  saveStatusText,
+  lastSavedAt,
+}: {
+  selectedCount: number;
+  totalCount: number;
+  missingCount: number;
+  missingMatches: number[];
+  progressPercent: number;
+  saveStatusText: string;
+  lastSavedAt: Date | null;
+}) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-teal-700">Tahmin durumu</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-950">
+            {selectedCount}/{totalCount} maç seçildi
+          </h2>
+        </div>
+        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+          {progressPercent}%
+        </span>
+      </div>
+
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-teal-700 transition-all"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
+      <div className="mt-3 space-y-1 text-sm">
+        <p className={missingCount > 0 ? "font-semibold text-amber-700" : "font-semibold text-teal-700"}>
+          {missingCount > 0 ? `${missingCount} maç eksik` : "Tüm maçlar seçildi"}
+        </p>
+        {missingMatches.length > 0 ? (
+          <p className="text-slate-500">Eksik maçlar: {missingMatches.join(", ")}</p>
+        ) : null}
+        <p className="font-semibold text-slate-700">{saveStatusText}</p>
+        {lastSavedAt ? (
+          <p className="text-slate-500">
+            Son kaydetme:{" "}
+            {new Intl.DateTimeFormat("tr-TR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(lastSavedAt)}
+          </p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -457,6 +555,14 @@ function AllPredictionsSection({
       ))}
     </section>
   );
+}
+
+function areChoicesEqual(
+  firstChoices: Record<string, Pick>,
+  secondChoices: Record<string, Pick>,
+  matches: Match[],
+) {
+  return matches.every((match) => firstChoices[match.id] === secondChoices[match.id]);
 }
 
 function StatusMessage({ message }: { message: Message }) {
