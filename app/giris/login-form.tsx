@@ -4,8 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 
-type Mode = "login" | "register";
-type View = Mode | "reset";
+type View = "login" | "reset";
 
 export function LoginForm() {
   const router = useRouter();
@@ -45,20 +44,12 @@ export function LoginForm() {
       return;
     }
 
-    const result =
-      view === "login"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+    const result = await supabase.auth.signInWithPassword({ email, password });
 
     setIsLoading(false);
 
     if (result.error) {
       setMessage(result.error.message);
-      return;
-    }
-
-    if (view === "register" && !result.data.session) {
-      setMessage("Kayit tamamlandi. E-posta dogrulamasi gerekiyorsa gelen kutunu kontrol et.");
       return;
     }
 
@@ -81,28 +72,7 @@ export function LoginForm() {
             E-posta adresini yaz, şifreni yenilemen için bağlantı gönderelim.
           </p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
-          <button
-            type="button"
-            onClick={() => switchView("login")}
-            className={`h-10 rounded-md text-sm font-bold ${
-              view === "login" ? "bg-white text-teal-800 shadow-sm" : "text-slate-600"
-            }`}
-          >
-            Giris
-          </button>
-          <button
-            type="button"
-            onClick={() => switchView("register")}
-            className={`h-10 rounded-md text-sm font-bold ${
-              view === "register" ? "bg-white text-teal-800 shadow-sm" : "text-slate-600"
-            }`}
-          >
-            Kayit
-          </button>
-        </div>
-      )}
+      ) : null}
 
       <label className="block">
         <span className="text-sm font-semibold text-slate-700">E-posta</span>
@@ -118,7 +88,7 @@ export function LoginForm() {
 
       {view !== "reset" ? (
         <label className="block">
-          <span className="text-sm font-semibold text-slate-700">Sifre</span>
+          <span className="text-sm font-semibold text-slate-700">Şifre</span>
           <div className="relative mt-2">
             <input
               type={showPassword ? "text" : "password"}
@@ -126,7 +96,7 @@ export function LoginForm() {
               onChange={(event) => setPassword(event.target.value)}
               required
               minLength={6}
-              autoComplete={view === "login" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 pr-20 text-base text-slate-950 outline-none focus:border-teal-600"
             />
             <button
@@ -139,6 +109,12 @@ export function LoginForm() {
             </button>
           </div>
         </label>
+      ) : null}
+
+      {view === "login" ? (
+        <p className="rounded-md bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-600">
+          Bu lig davetlidir. Hesaplar yönetici tarafından oluşturulur.
+        </p>
       ) : null}
 
       {message ? (
@@ -157,12 +133,10 @@ export function LoginForm() {
         className="h-12 w-full rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm disabled:opacity-60"
       >
         {isLoading
-          ? "Isleniyor..."
+          ? "İşleniyor..."
           : view === "reset"
             ? "Şifre sıfırlama bağlantısı gönder"
-            : view === "login"
-              ? "Giris yap"
-              : "Kayit ol"}
+            : "Giriş yap"}
       </button>
 
       {view === "reset" ? (
