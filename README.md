@@ -15,7 +15,7 @@ Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu 
 ## Ekranlar
 
 - `/` ana sayfa
-- `/giris` e-posta ve şifre ile giriş/kayıt ekranı; kullanıcılar buradan şifre sıfırlama bağlantısı isteyebilir
+- `/giris` e-posta ve şifre ile giriş ekranı; kullanıcılar buradan şifre sıfırlama bağlantısı isteyebilir
 - `/tahminler` tahmin giriş ekranı ve kapanış sonrası herkesin tahminleri
 - `/sonuclar` maç sonuçları ve kullanıcının doğru/yanlış tahminleri
 - `/puan-tablosu` haftalık ve sezon puan tablosu
@@ -57,9 +57,13 @@ https://spor-toto-tahmin.vercel.app/**
 
 `.env.local` git'e eklenmez. GitHub Actions içinde gerçek Supabase değerleri zorunlu değildir; uygulama build sırasında güvenli placeholder değerlerle derlenebilir.
 
+## Davetli Kullanım
+
+Fokur Toto Ligi davetlidir. Kullanıcı hesapları yönetici tarafından Supabase içinde manuel oluşturulur; uygulamada herkese açık kayıt formu gösterilmez.
+
 ## Demo Test Akışı
 
-1. `/giris` ekranından kullanıcı oluştur veya giriş yap.
+1. Yönetici Supabase içinde kullanıcıyı manuel oluşturur; kullanıcı `/giris` ekranından giriş yapar.
 2. `/tahminler` ekranında 15 maç için tahmin yap ve "Tahminleri Kaydet" ile kaydet.
 3. Haftayı kapatmak istersen Supabase SQL Editor içinde `supabase/close-demo-week.sql` çalıştır.
 4. Demo sonuçlarını girmek ve haftayı kapatmak için `supabase/set-demo-results.sql` çalıştır.
