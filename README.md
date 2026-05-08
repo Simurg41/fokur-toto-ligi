@@ -73,6 +73,8 @@ Fokur Toto Ligi davetlidir. Kullanıcı hesapları yönetici tarafından Supabas
 8. `/haftalar` ekranından eski haftaları, kendi tahminlerini, sonuçları ve haftalık puan tablosunu görüntüle.
 9. `/sezon` ekranından sezon liderlerini, haftalık kazananları ve oyuncu özetlerini görüntüle.
 
+Sezon tamamlandığında `/sezon` şampiyon kutlamasını gösterebilir. `/puan-tablosu` haftalık sıralamada bir önceki puanlanmış haftaya göre değişim göstergeleri sunar.
+
 Puanlar hesaplandıktan sonra `/sonuclar` ekranında "Tüm Sonuçları Gör" bölümü görünür. Bu bölüm haftanın skorlarını düşük puandan yüksek puana doğru animasyonlu şekilde açıklar ve en sonda haftanın kazananını gösterir.
 
 Sonuçları ve puanları temizleyip haftayı tekrar açmak için:
