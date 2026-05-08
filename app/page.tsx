@@ -27,71 +27,137 @@ type WeeklyStatus =
       isClosed: boolean;
     };
 
+const homeActions = [
+  {
+    href: "/tahminler",
+    icon: "1X2",
+    title: "Tahminler",
+    description: "Haftanın 15 maçlık kuponunu doldur.",
+    tone: "default",
+  },
+  {
+    href: "/sonuclar",
+    icon: "✓",
+    title: "Sonuçlar",
+    description: "Doğru ve yanlış tahminlerini gör.",
+    tone: "default",
+  },
+  {
+    href: "/puan-tablosu",
+    icon: "#",
+    title: "Puan Tablosu",
+    description: "Haftalık ve sezon sıralamasını takip et.",
+    tone: "default",
+  },
+  {
+    href: "/haftalar",
+    icon: "H",
+    title: "Geçmiş Haftalar",
+    description: "Eski kuponları, sonuçları ve puanları incele.",
+    tone: "default",
+  },
+  {
+    href: "/sezon",
+    icon: "S",
+    title: "Sezon Özeti",
+    description: "Liderleri, kazananları ve oyuncu istatistiklerini gör.",
+    tone: "highlight",
+  },
+  {
+    href: "/profil",
+    icon: "P",
+    title: "Profil",
+    description: "Görünen adını düzenle ve hesabını yönet.",
+    tone: "default",
+  },
+] as const;
+
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const weeklyStatus = await loadWeeklyStatus();
+  const [weeklyStatus, homeUser] = await Promise.all([loadWeeklyStatus(), loadHomeUser()]);
+  const heroCta = homeUser.isLoggedIn
+    ? { href: "/tahminler", label: "Tahminlere Git" }
+    : { href: "/giris", label: "Giriş Yap" };
+  const visibleActions = homeUser.isAdmin
+    ? [...homeActions, { href: "/admin", icon: "Y", title: "Admin", description: "Hafta, maç ve sonuç yönetimini aç.", tone: "highlight" as const }]
+    : homeActions;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg bg-teal-700 p-5 text-white shadow-sm">
-        <p className="text-sm font-semibold text-teal-100">Haftanın kuponu</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal">Fokur Toto Ligi</h1>
-        <p className="mt-3 text-sm leading-6 text-teal-50">
-          15 maçlık kuponunu seç, sonuçları takip et ve puan tablosunda durumunu gör.
-        </p>
-        <Link
-          href="/tahminler"
-          className="mt-5 inline-flex rounded-md bg-white px-4 py-3 text-sm font-bold text-teal-800 shadow-sm"
-        >
-          Tahmin yap
-        </Link>
+    <div className="space-y-6 lg:space-y-8">
+      <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="overflow-hidden rounded-3xl border border-teal-800 bg-teal-800 p-6 text-white shadow-sm lg:p-8">
+          <div className="flex flex-wrap gap-2">
+            {["Canlı lig", "Haftalık tahmin", "Puan mücadelesi"].map((pill) => (
+              <span key={pill} className="rounded-full bg-white/12 px-3 py-1 text-xs font-bold text-teal-50">
+                {pill}
+              </span>
+            ))}
+          </div>
+          <h1 className="mt-6 text-4xl font-black tracking-normal lg:text-5xl">Fokur Toto Ligi</h1>
+          <p className="mt-3 text-lg font-semibold text-teal-50">
+            Arkadaş arası haftalık 1/X/2 tahmin ligi
+          </p>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-teal-50/90 lg:text-base">
+            Kuponunu doldur, sonuçları takip et, haftalık kapışmada yerini koru.
+          </p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href={heroCta.href}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/25 px-5 text-sm font-black text-white transition hover:bg-white/10"
+            >
+              {heroCta.label}
+            </Link>
+            <Link
+              href="/puan-tablosu"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/25 px-5 text-sm font-black text-white transition hover:bg-white/10"
+            >
+              Puan Tablosu
+            </Link>
+          </div>
+        </div>
+
+        <WeeklyStatusCard status={weeklyStatus} />
       </section>
 
-      <WeeklyStatusCard status={weeklyStatus} />
-
-      <section className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-2xl font-bold text-slate-950">15</p>
-          <p className="mt-1 text-sm text-slate-600">Mac</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-2xl font-bold text-slate-950">0</p>
-          <p className="mt-1 text-sm text-slate-600">Canli veri</p>
-        </div>
+      <section className="grid grid-cols-3 gap-2 lg:gap-4">
+        <MiniStat value="15" label="Maç" />
+        <MiniStat value="1/X/2" label="Tahmin" />
+        <MiniStat value="Hafta" label="Ritim" />
       </section>
 
-      <Link
-        href="/haftalar"
-        className="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-300"
-      >
-        <p className="text-sm font-semibold text-teal-700">Geçmiş Haftalar</p>
-        <h2 className="mt-1 text-lg font-bold text-slate-950">Eski kuponları ve puanları gör</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Tamamlanan haftalarda tahminlerini, maç sonuçlarını ve haftalık sıralamayı kontrol et.
-        </p>
-      </Link>
-
-      <Link
-        href="/sezon"
-        className="block rounded-lg border border-teal-200 bg-teal-50 p-4 shadow-sm transition hover:border-teal-400"
-      >
-        <p className="text-sm font-semibold text-teal-700">Sezon Özeti</p>
-        <h2 className="mt-1 text-lg font-bold text-slate-950">Liderleri ve istatistikleri gör</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Sezon liderini, haftalık kazananları ve oyuncu performanslarını takip et.
-        </p>
-      </Link>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-950">Baslangic surumu</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Bu ekranda henüz harici API veya Supabase bağlantısı yok. Tahminler şimdilik cihazdaki
-          React state ile çalışır.
-        </p>
+      <section className="space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-teal-700">Lig ekranları</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-950">Hızlı erişim</h2>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visibleActions.map((action) => (
+            <HomeActionCard key={action.href} {...action} />
+          ))}
+        </div>
       </section>
     </div>
   );
+}
+
+async function loadHomeUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { isLoggedIn: false, isAdmin: false };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  return { isLoggedIn: true, isAdmin: profile?.role === "admin" };
 }
 
 async function loadWeeklyStatus(): Promise<WeeklyStatus> {
@@ -144,14 +210,17 @@ async function loadWeeklyStatus(): Promise<WeeklyStatus> {
 function WeeklyStatusCard({ status }: { status: WeeklyStatus }) {
   if (status.type === "logged-out") {
     return (
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm">
         <p className="text-sm font-semibold text-teal-700">Bu Haftanın Durumu</p>
         <h2 className="mt-1 text-lg font-bold text-slate-950">
           Tahmin durumunu görmek için giriş yap.
         </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Kupon ilerlemeni ve haftanın kapanış saatini giriş yaptıktan sonra burada görebilirsin.
+        </p>
         <Link
           href="/giris"
-          className="mt-4 inline-flex h-11 items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm"
+          className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-black text-white shadow-sm transition hover:bg-teal-800"
         >
           Giriş Yap
         </Link>
@@ -161,7 +230,7 @@ function WeeklyStatusCard({ status }: { status: WeeklyStatus }) {
 
   if (status.type === "empty") {
     return (
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm">
         <p className="text-sm font-semibold text-teal-700">Bu Haftanın Durumu</p>
         <h2 className="mt-1 text-lg font-bold text-slate-950">{status.text}</h2>
       </section>
@@ -172,7 +241,7 @@ function WeeklyStatusCard({ status }: { status: WeeklyStatus }) {
   const progressPercent = Math.round((status.selectedCount / status.totalMatches) * 100);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="rounded-3xl border border-teal-100 bg-gradient-to-br from-white to-teal-50 p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-teal-700">Bu Haftanın Durumu</p>
@@ -204,11 +273,59 @@ function WeeklyStatusCard({ status }: { status: WeeklyStatus }) {
       </p>
       <Link
         href={status.isClosed ? "/sonuclar" : "/tahminler"}
-        className="mt-4 flex h-11 w-full items-center justify-center rounded-md bg-teal-700 px-4 text-sm font-bold text-white shadow-sm"
+        className="mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-black text-white shadow-sm transition hover:bg-teal-800"
       >
         {status.isClosed ? "Sonuçlara Git" : "Tahminlere Git"}
       </Link>
     </section>
+  );
+}
+
+function MiniStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 text-center shadow-sm">
+      <p className="text-lg font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+function HomeActionCard({
+  href,
+  icon,
+  title,
+  description,
+  tone,
+}: {
+  href: string;
+  icon: string;
+  title: string;
+  description: string;
+  tone: "default" | "highlight";
+}) {
+  const isHighlight = tone === "highlight";
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 active:scale-[0.99] ${
+        isHighlight
+          ? "border-teal-200 bg-teal-50 hover:border-teal-400"
+          : "border-slate-200 bg-white hover:border-teal-300"
+      }`}
+    >
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black ${
+          isHighlight ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-700"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-base font-bold text-slate-950">{title}</span>
+        <span className="mt-1 block text-sm leading-5 text-slate-600">{description}</span>
+      </span>
+    </Link>
   );
 }
 
