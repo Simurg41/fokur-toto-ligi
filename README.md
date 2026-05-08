@@ -75,6 +75,8 @@ Fokur Toto Ligi davetlidir. Kullanıcı hesapları yönetici tarafından Supabas
 
 Sezon tamamlandığında `/sezon` şampiyon kutlamasını gösterebilir. `/puan-tablosu` haftalık sıralamada bir önceki puanlanmış haftaya göre değişim göstergeleri sunar.
 
+Resmî import ile gelen maçlarda `externalTeamId` değerleri kaydedilirse takım logoları Broadage CDN deseniyle gösterilir: `https://cdn.broadage.com/images-teams/soccer/72x72/{externalTeamId}.png`. Logo yoksa veya maç manuel oluşturulduysa arayüz takım baş harfine düşer.
+
 Puanlar hesaplandıktan sonra `/sonuclar` ekranında "Tüm Sonuçları Gör" bölümü görünür. Bu bölüm haftanın skorlarını düşük puandan yüksek puana doğru animasyonlu şekilde açıklar ve en sonda haftanın kazananını gösterir.
 
 Sonuçları ve puanları temizleyip haftayı tekrar açmak için:

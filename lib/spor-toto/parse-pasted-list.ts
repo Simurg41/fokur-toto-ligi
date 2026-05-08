@@ -3,6 +3,8 @@ export type ParsedSporTotoMatch = {
   home_team: string;
   away_team: string;
   starts_at: string | null;
+  home_external_team_id?: number | null;
+  away_external_team_id?: number | null;
 };
 
 type ParseSuccess = {
@@ -60,6 +62,8 @@ export function parsePastedSporTotoList(input: string): ParsePastedListResult {
       home_team: homeTeam || "",
       away_team: awayTeam || "",
       starts_at: startsAt || null,
+      home_external_team_id: null,
+      away_external_team_id: null,
     };
   });
 
