@@ -11,15 +11,24 @@ const navItems = [
   { href: "/sonuclar", label: "Sonuçlar", icon: "S" },
   { href: "/puan-tablosu", label: "Puan", icon: "#" },
   { href: "/profil", label: "Profil", icon: "P" },
-  { href: "/giris", label: "Giriş", icon: "G" },
 ];
 
 export function BottomNavigation() {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const visibleNavItems = useMemo(
-    () => (isAdmin ? [...navItems, { href: "/admin", label: "Admin", icon: "Y" }] : navItems),
-    [isAdmin],
+    () => {
+      if (!isLoggedIn) {
+        return [
+          { href: "/", label: "Ana Sayfa", icon: "A" },
+          { href: "/giris", label: "Giriş", icon: "G" },
+        ];
+      }
+
+      return isAdmin ? [...navItems, { href: "/admin", label: "Admin", icon: "Y" }] : navItems;
+    },
+    [isAdmin, isLoggedIn],
   );
 
   useEffect(() => {
@@ -30,8 +39,13 @@ export function BottomNavigation() {
       if (!userId) {
         if (isMounted) {
           setIsAdmin(false);
+          setIsLoggedIn(false);
         }
         return;
+      }
+
+      if (isMounted) {
+        setIsLoggedIn(true);
       }
 
       const { data, error } = await supabase
@@ -72,7 +86,7 @@ export function BottomNavigation() {
   }, [pathname]);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
       <div
         className="mx-auto grid max-w-md gap-1"
         style={{ gridTemplateColumns: `repeat(${visibleNavItems.length}, minmax(0, 1fr))` }}
@@ -85,8 +99,8 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 text-xs font-semibold transition ${
-                isActive ? "bg-teal-700 text-white" : "text-slate-500 hover:bg-slate-100"
+              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-xs font-bold transition ${
+                isActive ? "bg-teal-700 text-white shadow-sm" : "text-slate-500 hover:bg-slate-100"
               }`}
             >
               <span className="text-sm font-bold leading-none">{item.icon}</span>
