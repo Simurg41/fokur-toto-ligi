@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ChampionCard } from "./champion-card";
 
 type Season = {
   id: string;
@@ -10,6 +11,7 @@ type Week = {
   id: string;
   name: string | null;
   week_number: number;
+  closes_at: string;
 };
 
 type WeeklyScore = {
@@ -27,6 +29,10 @@ type SeasonScore = {
 type Profile = {
   id: string;
   display_name: string | null;
+};
+
+type MatchResult = {
+  official_result: string | null;
 };
 
 type LeaderRow = {
@@ -86,12 +92,13 @@ export default async function SeasonStatsPage() {
 
   const { data: weekData } = await supabase
     .from("weeks")
-    .select("id, name, week_number")
+    .select("id, name, week_number, closes_at")
     .eq("season_id", season.id)
     .order("week_number", { ascending: true });
   const weeks = (weekData || []) as Week[];
   const weekIds = weeks.map((week) => week.id);
-  const [{ data: weeklyScoreData }, { data: seasonScoreData }] = await Promise.all([
+  const latestWeek = [...weeks].sort((first, second) => second.week_number - first.week_number)[0];
+  const [{ data: weeklyScoreData }, { data: seasonScoreData }, { data: latestMatchData }] = await Promise.all([
     weekIds.length > 0
       ? supabase
           .from("weekly_scores")
@@ -103,10 +110,14 @@ export default async function SeasonStatsPage() {
       .select("user_id, points")
       .eq("season_id", season.id)
       .order("points", { ascending: false }),
+    latestWeek
+      ? supabase.from("matches").select("official_result").eq("week_id", latestWeek.id)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const weeklyScores = (weeklyScoreData || []) as WeeklyScore[];
   const seasonScores = (seasonScoreData || []) as SeasonScore[];
+  const latestMatches = (latestMatchData || []) as MatchResult[];
   const userIds = Array.from(
     new Set([...weeklyScores.map((score) => score.user_id), ...seasonScores.map((score) => score.user_id)]),
   );
@@ -203,10 +214,11 @@ export default async function SeasonStatsPage() {
 
       return first.name.localeCompare(second.name, "tr");
     });
+  const isSeasonFinished = getSeasonFinished(weeks, latestMatches);
 
   return (
     <SeasonShell>
-      <ChampionCard rows={seasonRows} />
+      <ChampionCard rows={seasonRows} isSeasonFinished={isSeasonFinished} />
       <ScoreTable rows={seasonRows} />
       <PlayerStatsSection stats={playerStats} />
       <WeeklyWinnersSection winners={weeklyWinners} weekById={weekById} />
@@ -224,33 +236,6 @@ function SeasonShell({ children }: { children: React.ReactNode }) {
       </header>
       {children}
     </div>
-  );
-}
-
-function ChampionCard({ rows }: { rows: LeaderRow[] }) {
-  if (rows.length === 0) {
-    return <EmptyState text="Sezon puanları henüz oluşmadı." />;
-  }
-
-  const topPoints = rows[0].points;
-  const leaders = rows.filter((row) => row.points === topPoints);
-
-  return (
-    <section className="rounded-lg border border-teal-200 bg-teal-700 p-5 text-white shadow-sm">
-      <p className="text-sm font-semibold text-teal-100">
-        {leaders.length === 1 ? "Sezon Lideri" : "Sezon Liderleri"}
-      </p>
-      <div className="mt-3 space-y-2">
-        {leaders.map((leader) => (
-          <div key={leader.userId} className="flex items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-xl font-bold">{leader.name}</p>
-            <p className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-bold text-teal-800">
-              {leader.points} puan
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -401,4 +386,15 @@ function formatAverage(value: number) {
     maximumFractionDigits: 1,
     minimumFractionDigits: 1,
   }).format(value);
+}
+
+function getSeasonFinished(weeks: Week[], latestMatches: MatchResult[]) {
+  if (weeks.length === 0 || latestMatches.length === 0) {
+    return false;
+  }
+
+  const allWeeksClosed = weeks.every((week) => new Date(week.closes_at) <= new Date());
+  const latestWeekHasAllResults = latestMatches.every((match) => match.official_result !== null);
+
+  return allWeeksClosed && latestWeekHasAllResults;
 }
