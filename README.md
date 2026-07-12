@@ -1,190 +1,258 @@
 # Fokur Toto Ligi
 
-Mobil öncelikli, Next.js App Router ile hazırlanmış küçük arkadaş grubu Fokur Toto Ligi uygulaması.
+A modern, invite-only football prediction platform inspired by the weekly Spor Toto format.
 
-## Teknolojiler
+Players submit `1 / X / 2` predictions for weekly match lists, follow their results, compare scores on the leaderboard, and review their season performance. Administrators manage weeks, matches, official result imports, and score calculation through a dedicated dashboard.
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- ESLint
-- PWA manifest
-- Supabase Auth ve veritabanı
+## Overview
+
+Fokur Toto Ligi is a full-stack web application built as a private prediction league for friends and invited players.
+
+The project focuses on:
+
+- secure authentication,
+- weekly football predictions,
+- automated score calculation,
+- season-based statistics,
+- responsive mobile-first design,
+- administrative match and result management.
+
+## Features
+
+### Player features
+
+- Secure email and password authentication
+- Invite-only account system
+- Weekly `1 / X / 2` match predictions
+- Prediction deadline and locking behavior
+- Weekly results overview
+- Overall leaderboard
+- Personal profile and prediction statistics
+- Previous weeks and prediction history
+- Season overview
+- Responsive desktop and mobile interface
+- Mobile bottom navigation
+
+### Administrator features
+
+- Dedicated admin dashboard
+- Create and manage prediction weeks
+- Add and update match lists
+- Enter or import match results
+- Preview official Spor Toto data before saving
+- Manually trigger score calculation
+- Manage active and published weeks
+- Review application and league data
+
+## Technology Stack
+
+| Area | Technology |
+|---|---|
+| Framework | Next.js |
+| Language | TypeScript |
+| UI | React |
+| Styling | Tailwind CSS |
+| Authentication | Supabase Auth |
+| Database | Supabase PostgreSQL |
+| Server logic | Next.js Server Actions and API routes |
+| CI | GitHub Actions |
+| Package manager | npm |
+
+## Main Routes
+
+| Route | Description |
+|---|---|
+| `/` | Application homepage |
+| `/giris` | Login and password reset |
+| `/tahminler` | Current week predictions |
+| `/sonuclar` | Weekly results |
+| `/puan-tablosu` | League leaderboard |
+| `/profil` | Player profile and statistics |
+| `/haftalar` | Previous and available weeks |
+| `/sezon` | Season overview |
+| `/admin` | Administrator dashboard |
+
+Protected routes require a valid Supabase session.
+
+## Prediction System
+
+Each weekly match can be predicted using:
+
+- `1` — Home team wins
+- `X` — Draw
+- `2` — Away team wins
+
+Predictions are available until the configured deadline. Once the deadline has passed, the week is locked and existing selections can no longer be changed.
+
+After the official results are entered, the administrator can trigger score calculation for the selected week.
+
+## Official Match Data Workflow
+
+The project includes server-side routes for working with publicly available Spor Toto match and result data.
+
+The administrative workflow is designed around review and confirmation:
+
+1. Request the available match or result data.
+2. Display the parsed data as a preview.
+3. Allow the administrator to verify the information.
+4. Save the approved data to the application database.
+5. Calculate player scores after the results are confirmed.
+
+Imported data is not intended to be saved without administrator review.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20 or newer
 - npm
+- A Supabase project
 
-## Ekranlar
+### Installation
 
-- `/` ana sayfa
-- `/giris` e-posta ve şifre ile giriş ekranı; kullanıcılar buradan şifre sıfırlama bağlantısı isteyebilir
-- `/tahminler` tahmin giriş ekranı ve kapanış sonrası herkesin tahminleri
-- `/sonuclar` maç sonuçları ve kullanıcının doğru/yanlış tahminleri
-- `/puan-tablosu` haftalık ve sezon puan tablosu
-- `/haftalar` eski haftalar, kullanıcının tahminleri, sonuçlar ve haftalık sıralama
-- `/sezon` sezon istatistikleri, liderler, haftalık kazananlar ve oyuncu özetleri
-- `/profil` profil, görünen ad düzenleme ve çıkış ekranı
+Clone the repository:
 
-## Kurulum
+```bash
+git clone https://github.com/Simurg41/fokur-toto-ligi.git
+cd fokur-toto-ligi
+```
+
+Install the dependencies:
 
 ```bash
 npm install
-npm run lint --if-present
-npm run build
+```
+
+### Environment Variables
+
+Create a `.env.local` file in the project root:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Do not commit `.env.local` or any private credentials to GitHub.
+
+### Database Setup
+
+Use the SQL files in the `supabase` directory to create the required tables, policies, and database structure.
+
+To assign administrator access, use the provided example SQL file after replacing the placeholder email address with the correct account:
+
+```sql
+where email = 'YOUR_EMAIL@example.com';
+```
+
+Review every SQL script before executing it in the Supabase SQL Editor.
+
+### Start the Development Server
+
+```bash
 npm run dev
 ```
 
-Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışır.
+Open the application at:
 
-## Supabase Kurulumu
+```text
+http://localhost:3000
+```
 
-1. `.env.example` dosyasını örnek alarak `.env.local` oluştur.
-2. Supabase proje değerlerini ekle:
+## Available Commands
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+npm run dev
 ```
 
-3. Supabase SQL Editor içinde önce `supabase/schema.sql` dosyasındaki SQL'i çalıştır.
-4. Demo sezon, açık hafta ve 15 maç oluşturmak için ardından `supabase/seed-demo-week.sql` dosyasındaki SQL'i çalıştır.
-5. Admin rolü, admin RLS politikaları ve puan hesaplama RPC fonksiyonu için `supabase/add-admin-role-and-admin-tools.sql` çalıştır.
-6. Supabase Auth ayarlarında Email provider'ın açık olduğundan emin ol.
-7. Şifre sıfırlama için Supabase redirect URL listesinde şu adreslerin bulunduğundan emin ol:
-
-```text
-http://localhost:3000/**
-https://spor-toto-tahmin.vercel.app/**
-```
-
-`.env.local` git'e eklenmez. GitHub Actions içinde gerçek Supabase değerleri zorunlu değildir; uygulama build sırasında güvenli placeholder değerlerle derlenebilir.
-
-## Davetli Kullanım
-
-Fokur Toto Ligi davetlidir. Kullanıcı hesapları yönetici tarafından Supabase içinde manuel oluşturulur; uygulamada herkese açık kayıt formu gösterilmez.
-
-## Demo Test Akışı
-
-1. Yönetici Supabase içinde kullanıcıyı manuel oluşturur; kullanıcı `/giris` ekranından giriş yapar.
-2. `/tahminler` ekranında 15 maç için tahmin yap ve "Tahminleri Kaydet" ile kaydet.
-3. Haftayı kapatmak istersen Supabase SQL Editor içinde `supabase/close-demo-week.sql` çalıştır.
-4. Demo sonuçlarını girmek ve haftayı kapatmak için `supabase/set-demo-results.sql` çalıştır.
-5. Puanları hesaplamak için `supabase/recalculate-demo-scores.sql` çalıştır.
-6. `/sonuclar` ekranında maç sonuçlarını ve kendi doğru/yanlış tahminlerini kontrol et.
-7. `/puan-tablosu` ekranında haftalık ve sezon puan tablolarını kontrol et.
-8. `/haftalar` ekranından eski haftaları, kendi tahminlerini, sonuçları ve haftalık puan tablosunu görüntüle.
-9. `/sezon` ekranından sezon liderlerini, haftalık kazananları ve oyuncu özetlerini görüntüle.
-
-Sezon tamamlandığında `/sezon` şampiyon kutlamasını gösterebilir. `/puan-tablosu` haftalık sıralamada bir önceki puanlanmış haftaya göre değişim göstergeleri sunar.
-
-Resmî import ile gelen maçlarda `externalTeamId` değerleri kaydedilirse takım logoları Broadage CDN deseniyle gösterilir: `https://cdn.broadage.com/images-teams/soccer/72x72/{externalTeamId}.png`. Logo yoksa veya maç manuel oluşturulduysa arayüz takım baş harfine düşer.
-
-Puanlar hesaplandıktan sonra `/sonuclar` ekranında "Tüm Sonuçları Gör" bölümü görünür. Bu bölüm haftanın skorlarını düşük puandan yüksek puana doğru animasyonlu şekilde açıklar ve en sonda haftanın kazananını gösterir.
-
-Sonuçları ve puanları temizleyip haftayı tekrar açmak için:
-
-```sql
--- supabase/clear-demo-results.sql
-```
-
-Haftayı sadece tekrar tahmine açmak için:
-
-```sql
--- supabase/reopen-demo-week.sql
-```
-
-Hafta açıkken `/tahminler` ekranında kullanıcı yalnızca kendi tahminlerini görür. Hafta kapandıktan sonra seçim butonları pasif olur, kayıt butonu gizlenir ve "Herkesin Tahminleri" bölümü görünür.
-
-## Admin Paneli
-
-Kendini admin yapmak için `supabase/make-user-admin.example.sql` dosyasındaki örneği kendi e-posta adresinle düzenleyip Supabase SQL Editor içinde çalıştır.
-
-Admin kullanıcılar alt menüde `/admin` bağlantısını görür. Bu sayfa aktif sezonun son haftası için manuel yönetim sağlar:
-
-- Haftayı kapatır veya tekrar açar.
-- Yeni hafta oluşturur.
-- Yeni hafta için 15 maçlık listeyi manuel girer.
-- Aktif son haftanın ev sahibi, deplasman ve maç zamanı bilgilerini düzenler.
-- 15 maç için resmi sonucu `Boş`, `1`, `X`, `2` veya `void` olarak kaydeder.
-- `recalculate_scores_for_week` RPC fonksiyonu ile puanları hesaplar.
-
-Uygulama aktif sezon içindeki en yüksek `week_number` değerine sahip haftayı güncel hafta kabul eder. Yeni hafta oluştururken `week_number` önceki haftalardan büyük olursa `/tahminler`, `/sonuclar`, `/puan-tablosu` ve `/admin` bu haftayı kullanır.
-
-Yeni hafta oluşturmak için `/admin` içindeki "Yeni Hafta Oluştur" formunda hafta adı, hafta numarası, tahmin açılış/kapanış zamanı ve 15 maçın ev sahibi/deplasman bilgileri girilir. Maç zamanı isteğe bağlıdır. Oluşturduktan sonra aynı sayfadaki "Aktif Hafta Yönetimi" bölümünden maç listesi manuel olarak güncellenebilir.
-
-## Spor Toto Liste İçe Aktarma
-
-`/admin` içindeki "Spor Toto Listesi İçe Aktar" bölümü 15 maçlık listeyi önce önizler, yalnızca admin onaylarsa yeni hafta olarak kaydeder. Bu akış yanlış veri girişine karşı bilinçli bir kontrol adımı sağlar.
-
-Desteklenen yapıştırma formatı satır başına noktalı virgül ile ayrılmıştır:
-
-```text
-1;Galatasaray;Fenerbahçe;2026-05-08T20:00
-2;Beşiktaş;Trabzonspor;2026-05-09T19:00
-3;Samsunspor;Konyaspor
-```
-
-Her satır `pozisyon;ev sahibi;deplasman;maç zamanı` biçimindedir. Maç zamanı isteğe bağlıdır, ancak varsa geçerli bir tarih olmalıdır. Liste tam 15 geçerli maç içermelidir.
-
-### Resmî API ile Önizleme
-
-Admin panelindeki "Resmî API’den Liste Çek" alanı `gameRoundId` ile resmî maç listesini önizler. Kullanılan endpoint biçimi:
-
-```text
-https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId={gameRoundId}
-```
-
-Örnek:
-
-```text
-https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId=1512
-```
-
-`gameRoundId` bulmak için tarayıcıda resmî Spor Toto sayfasını açıp DevTools Network sekmesinde `GetGameMatches` isteğini arayabilirsin. İstek URL'sindeki `gameRoundId` değerini `/admin` içindeki alana girip "Resmî Listeden Önizle" butonuna bas.
-
-Admin panelindeki "Yayınlanmış Haftaları Getir" alanı sezon yılına göre resmî yayınlanmış haftaları listeler. Varsayılan sezon yılı `2025/2026` değeridir. Bir hafta seçildiğinde hem maç listesi hem de sonuç importu için `gameRoundId` alanları doldurulur; admin yine de önizleme ve onay adımlarını kullanır. İstersen `gameRoundId` alanlarını manuel yazmaya devam edebilirsin.
-
-Yayınlanmış hafta listesi için kullanılan endpoint:
-
-```text
-https://webapi.sportoto.gov.tr/api/GameRound?year=2025%2F2026&isPublished=true
-```
-
-Endpoint sabiti `app/api/spor-toto/rounds/route.ts` içindedir. Resmî yol değişirse bu sabit güncellenebilir.
-
-Bu işlem veritabanına otomatik yazmaz. Admin önce 15 maçlık listeyi önizler, hafta adı/numarası ve tahmin zamanlarını kontrol eder, sonra "Önizlenen Listeyle Hafta Oluştur" ile onaylarsa kayıt yapılır. Bu önizleme/onay adımı yanlış veri girişine karşı bilinçli olarak korunmuştur.
-
-Resmî API uç noktası ileride değişebilir; böyle bir durumda `app/api/spor-toto/matches` ve parser güncellenmelidir. Resmî sonuç importu, cron veya otomatik mevcut hafta tespiti henüz yoktur.
-
-### Resmî Sonuç Önizleme
-
-Admin panelindeki "Resmî Sonuçları İçe Aktar" alanı aynı `gameRoundId` ile resmî sonuçları önizler. Maç listesi ve maç sonuçları aynı endpoint üzerinden okunur:
-
-```text
-https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId={gameRoundId}
-```
-
-Örnek:
-
-```text
-https://webapi.sportoto.gov.tr/api/GameMatch/GetGameMatches/?gameRoundId=1512
-```
-
-`gameRoundId` bulmak için DevTools Network sekmesinde `GetGameMatches?gameRoundId=1512` benzeri isteği arayabilirsin. `/admin` içinde "Resmî Sonuçları Önizle" butonu sonuçları getirir, aktif haftadaki maçlarla pozisyona göre eşleştirir ve uyarıları gösterir.
-
-`GetGameResultByGameRoundId?id=1512` endpointi 1/X/2 maç sonucu değil, ödül/ikramiye bilgisi döndürür. Bu yüzden sonuç importunda kullanılmaz. Maçlar oynandıktan sonra `GetGameMatches` yanıtında `match.fullTimeWin` ve `match.score.homeRegular / awayRegular` alanları dolduğunda sonuçlar okunabilir.
-
-Sonuçlar otomatik uygulanmaz. Admin her sonucu `Boş`, `1`, `X`, `2` veya `void` olarak düzenleyebilir ve yalnızca "Resmî Sonuçları Uygula" butonuyla aktif haftaya yazar. Puanlar otomatik hesaplanmaz; sonuçları uyguladıktan sonra "Puanları Hesapla" butonuna basmak gerekir.
-
-Bu panel otomatik Spor Toto importu gelmeden önce manuel yedek yönetim aracı olarak tasarlanmıştır. Service role key kullanılmaz.
-
-## Kontroller
+Starts the application in development mode.
 
 ```bash
-npm run lint --if-present
 npm run build
 ```
 
-## Notlar
+Creates a production build.
 
-- Harici API henüz eklenmedi.
-- Spor Toto veri importu, admin paneli ve otomatik puan hesaplama henüz uygulanmadı.
-- Demo puan hesaplama SQL dosyası ile manuel olarak çalıştırılır.
+```bash
+npm run start
+```
+
+Starts the production server after a successful build.
+
+```bash
+npm run lint
+```
+
+Runs the configured lint checks.
+
+## Project Structure
+
+```text
+fokur-toto-ligi/
+├── app/                  # Next.js routes, pages and server endpoints
+├── components/           # Reusable interface components
+├── lib/                  # Shared utilities and Supabase clients
+├── public/               # Static assets
+├── supabase/             # Database schema and setup scripts
+├── .github/workflows/    # Continuous integration workflows
+├── package.json
+└── README.md
+```
+
+## Authentication and Authorization
+
+Authentication is handled through Supabase Auth.
+
+The application uses server-verified session cookies rather than trusting values stored only in the browser. Protected pages are checked before access is granted.
+
+Administrator functionality must also be protected through the corresponding user role stored in the application database.
+
+## Security Notes
+
+- Environment files are excluded from version control.
+- Supabase service-role credentials must never be exposed to the browser.
+- Administrative operations should always verify authorization on the server.
+- Database access is protected through Supabase Row Level Security policies.
+- Imported match and result data should be reviewed before it is persisted.
+
+## Current Status
+
+The following functionality is implemented:
+
+- Next.js and Supabase application architecture
+- Authentication and protected routes
+- Weekly match and prediction management
+- Player profiles and statistics
+- Leaderboard and result pages
+- Season and week navigation
+- Administrator dashboard
+- Official match and result preview workflows
+- Score calculation
+- Responsive application shell
+- GitHub Actions lint and build workflow
+
+## Possible Future Improvements
+
+- Dedicated automated test accounts
+- Additional Playwright end-to-end coverage
+- Scheduled cross-browser testing
+- Visual regression testing
+- Accessibility checks
+- Push or email deadline notifications
+- Extended season analytics
+- Improved administrator audit history
+
+## Disclaimer
+
+This is an independent personal portfolio project.
+
+It is not an official Spor Toto product and is not affiliated with, endorsed by, or sponsored by Spor Toto or any football organization. External data structures and endpoints may change and could require updates to the related parsers or server routes.
+
+## Author
+
+**Ahmet Kislali**
+
+Software development and test automation portfolio project.
+
+## License
+
+This project is provided as personal portfolio work and is not licensed for redistribution.
