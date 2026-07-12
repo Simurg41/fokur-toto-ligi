@@ -1,4 +1,4 @@
-# Fokur Toto Ligi
+# Fokur Toto League
 
 A modern, invite-only football prediction platform inspired by the weekly Spor Toto format.
 
