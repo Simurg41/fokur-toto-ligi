@@ -7,5 +7,5 @@
 -- where id = (
 --   select id
 --   from auth.users
---   where email = 'ahmetkgaming@gmail.com'
+--   where email = 'YOUR_EMAIL@example.com'
 -- );
